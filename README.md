@@ -9,26 +9,30 @@ Raw Video ──> Pose + Board Tracking ──> Canonical Coordinates ──> Te
 
 ---
 
-## 📖 Specifications & Architecture Plan
+## 📖 Project Documentation & Architecture Plans
 
-The complete engineering, research, and phase implementation specification is documented in:
-👉 **[MASTER_FINAL.md](./MASTER_FINAL.md)**
+* **Master Specification:** 👉 **[MASTER_FINAL.md](./MASTER_FINAL.md)** (v3.0 Production & Research Ready)
+* **Resource & Data Requirements:** 📋 **[REQUIREMENT.md](./REQUIREMENT.md)** (Datasets, hardware, annotations, libraries, and schemas)
+* **Reporting Standard:** 📝 **[docs/PHASE_REPORT_GUIDELINE.md](./docs/PHASE_REPORT_GUIDELINE.md)**
 
-### Key Modules
-1. **Pose & Board Tracking Pipeline**: Multi-person suppression, 2D human pose estimation (ViTPose/RTMPose), oriented bounding box deck tracker (YOLOv8-OBB/RT-DETR).
-2. **Canonical Coordinate Normalization**: Viewpoint invariance via homography and board-centric coordinate projections.
-3. **Temporal Phase Segmentation**: Pop, Apex, Catch, and Landing event boundary detection via kinematic derivates ($\dot{y}, \ddot{y}, \omega$).
-4. **Trick Classification Engine**: Hierarchical multi-branch classifier (Pop vs No-pop, Board Flips, Shuvit/Rotations) evaluated against human expert standards.
-5. **Cleanliness & Execution Scoring (Regression)**: Quantifying pop height, catch timing, truck proximity, angular deviation, and landing stability.
-6. **Telemetry & Visual HUD**: Augmented video renderer displaying real-time metrics, phase timelines, and overlay stats.
+### Phase-by-Phase Implementation Plans
+1. **Phase 1: Video Ingestion, Spatial Tracking & Canonical Feature Store** ── [Plan](./docs/PHASE_1_PLAN.md) | [Report Template](./docs/reports/PHASE_1_REPORT.md)
+2. **Phase 2: Temporal Event Localization & Phase Segmentation** ── [Plan](./docs/PHASE_2_PLAN.md) | [Report Template](./docs/reports/PHASE_2_REPORT.md)
+3. **Phase 3: Trick Classification Engine & Land/Bail Verification** ── [Plan](./docs/PHASE_3_PLAN.md) | [Report Template](./docs/reports/PHASE_3_REPORT.md)
+4. **Phase 4: Kinematic Cleanliness Regression & Expert Calibration** ── [Plan](./docs/PHASE_4_PLAN.md) | [Report Template](./docs/reports/PHASE_4_REPORT.md)
+5. **Phase 5: Telemetry HUD Overlay & Interactive Dashboard** ── [Plan](./docs/PHASE_5_PLAN.md) | [Report Template](./docs/reports/PHASE_5_REPORT.md)
+6. **Phase 6: End-to-End Evaluation, Error Tagging & Release** ── [Plan](./docs/PHASE_6_PLAN.md) | [Report Template](./docs/reports/PHASE_6_REPORT.md)
 
 ---
 
 ## 🛠️ Repository Status
 
-- [x] Master Research & Implementation Specification (v3.0)
-- [ ] Phase 1: Video Ingestion & Synchronized Tracking
-- [ ] Phase 2: Canonical Normalization & Phase Segmentation
+- [x] Master Research & Implementation Specification (`MASTER_FINAL.md`)
+- [x] Project Requirements & Resource Tracking Registry (`REQUIREMENT.md`)
+- [x] Phase Implementation Plans & QC Reporting Framework (`docs/`)
+- [ ] Phase 1: Video Ingestion & Spatial Tracking
+- [ ] Phase 2: Temporal Event Localization & Phase Segmentation
 - [ ] Phase 3: Trick Classification & Land/Bail Gating
 - [ ] Phase 4: Kinematic Cleanliness Regression & Calibration
-- [ ] Phase 5: Telemetry HUD & CLI / Web Interface
+- [ ] Phase 5: Telemetry HUD Overlay & Streamlit App
+- [ ] Phase 6: End-to-End Evaluation & Release
