@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Datasets & Large Media Files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.tar
+*.tar.gz
+*.zip
+*.7z
+data/
+raw_data/
+datasets/
+videos/
+
+# Model Checkpoints & Weights
+*.pt
+*.pth
+*.onnx
+*.engine
+*.h5
+*.tflite
+*.ckpt
+checkpoints/
+weights/
+runs/
+wandb/
+
+# Logs & outputs
+*.log
+logs/
+outputs/
+results/
