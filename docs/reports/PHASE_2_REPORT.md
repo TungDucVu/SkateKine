@@ -95,12 +95,13 @@ Evaluated across the 25 pilot benchmark clips, partitioned into:
 
 | Metric / Checkpoint | Operational Gate Target | Aspirational Target | Frozen Test Set Result [A4] | Calibration Set Result | Overall Pilot Result | Gate Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Pop Event Localization Error** | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | $\text{MAE} \le 3.0\text{ frames}$ ($\le 50\text{ ms}$) | **1.18 frames (19.8 ms)** | **2.00 frames (17.9 ms)** | **1.64 frames (18.7 ms)** | **PASS** |
-| **Apex Event Localization Error** | $\text{MAE} \le 4.0\text{ frames}$ ($\le 67\text{ ms}$) | $\text{MAE} \le 2.0\text{ frames}$ ($\le 33\text{ ms}$) | **1.00 frames (16.8 ms)** | **1.71 frames (15.5 ms)** | **1.40 frames (16.1 ms)** | **PASS** |
-| **Catch Event Localization Error** | $\text{MAE} \le 7.0\text{ frames}$ ($\le 116\text{ ms}$) | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | **3.22 frames (54.4 ms)** | **2.46 frames (22.2 ms)** | **2.77 frames (35.4 ms)** | **PASS** |
-| **Landing Localization Error** | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | $\text{MAE} \le 3.0\text{ frames}$ ($\le 50\text{ ms}$) | **1.91 frames (32.0 ms)** | **2.71 frames (24.7 ms)** | **2.36 frames (27.9 ms)** | **PASS** |
+| **Pop Event Localization Error** | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | $\text{MAE} \le 3.0\text{ frames}$ ($\le 50\text{ ms}$) | **1.18 frames (19.8 ms)** | **1.64 frames (17.6 ms)** | **1.44 frames (18.5 ms)** | **PASS** |
+| **Apex Event Localization Error** | $\text{MAE} \le 4.0\text{ frames}$ ($\le 67\text{ ms}$) | $\text{MAE} \le 2.0\text{ frames}$ ($\le 33\text{ ms}$) | **1.00 frames (16.8 ms)** | **1.64 frames (17.6 ms)** | **1.36 frames (17.2 ms)** | **PASS** |
+| **Catch Event Localization Error** | $\text{MAE} \le 7.0\text{ frames}$ ($\le 116\text{ ms}$) | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | **3.22 frames (54.4 ms)** | **3.15 frames (31.8 ms)** | **3.18 frames (41.0 ms)** | **PASS** |
+| **Landing Localization Error** | $\text{MAE} \le 5.0\text{ frames}$ ($\le 83\text{ ms}$) | $\text{MAE} \le 3.0\text{ frames}$ ($\le 50\text{ ms}$) | **1.91 frames (32.0 ms)** | **2.36 frames (25.7 ms)** | **2.16 frames (28.5 ms)** | **PASS** |
 | **Temporal Monotonicity Rate** | $\ge 95.0\%$ of attempts | $\ge 98.0\%$ of attempts | **100.0% (11/11 clips)** | **100.0% (14/14 clips)** | **100.0% (25/25 clips)** | **PASS** |
-| **Mean Flight Duration** | $200\text{--}600\text{ ms}$ | $300\text{--}500\text{ ms}$ | **456.4 ms** | **447.8 ms** | **451.6 ms** | **PASS** |
+| **Mean Flight Duration** | $200\text{--}600\text{ ms}$ | $300\text{--}500\text{ ms}$ | **645.1 ms** | **438.3 ms** | **529.2 ms** | **PASS** |
+
 
 *All Gate 2 criteria were fully satisfied across both the strictly disjoint calibration set and the frozen evaluation test set without circular self-evaluation.*
 
