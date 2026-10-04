@@ -13,20 +13,20 @@ class ImpactLandingDetector:
     """
     Detects t_land using a causal physical chain [A5]:
     1. Descent Phase (vel_z_deck < -epsilon)
-    2. Ground Proximity (deck_altitude descends towards ground baseline)
-    3. Deceleration Shockwave (acc_z_deck or acc_z_mid_hip positive impact peak)
+    2. Full Ground Return (altitude descends to true landing baseline)
+    3. Deceleration Shockwave (acc_z_deck impact peak or velocity zero-rebound)
     4. Post-Contact Rollout Stabilization
     """
 
     def __init__(
         self,
         descent_vel_threshold: float = -80.0,
-        ground_proximity_threshold: float = 35.0,
-        shock_acc_threshold: float = 2000.0,
+        ground_margin_px: float = 25.0,
+        shock_acc_threshold: float = 3000.0,
         max_descent_duration_sec: float = 0.85
     ):
         self.descent_vel_threshold = descent_vel_threshold
-        self.ground_proximity_threshold = ground_proximity_threshold
+        self.ground_margin_px = ground_margin_px
         self.shock_acc_threshold = shock_acc_threshold
         self.max_descent_duration_sec = max_descent_duration_sec
 
@@ -38,6 +38,7 @@ class ImpactLandingDetector:
     ) -> int:
         """
         Locates t_land post-apex within the causal ballistic descent window [A5].
+        Ensures the board has completed descent to the actual ground baseline before marking rollout.
         Returns: t_land_frame
         """
         n = len(df)
@@ -53,10 +54,19 @@ class ImpactLandingDetector:
         acc_deck = df['acc_z_deck'].values
         acc_hip = df['acc_z_mid_hip'].values
 
-        # Track descent and find earliest touchdown impact
+        # 1. Establish the minimum altitude reached during the post-apex descent
+        sub_alt = deck_alt[search_start:search_end]
+        valid_sub = sub_alt[~np.isnan(sub_alt)]
+        if len(valid_sub) == 0:
+            return search_start + (search_end - search_start) // 2
+
+        min_post_apex_alt = float(np.min(valid_sub))
+        # Ground touchdown band: within ground_margin_px of the lowest post-apex point
+        ground_touchdown_band = min_post_apex_alt + self.ground_margin_px
+
+        # 2. Track descent and look for the ground touchdown impact
         has_descended = False
-        best_land = search_start
-        min_descending_alt = 1e9
+        best_land = None
 
         for t in range(search_start, search_end):
             v = vel_z[t] if not np.isnan(vel_z[t]) else 0.0
@@ -67,19 +77,19 @@ class ImpactLandingDetector:
             if v < self.descent_vel_threshold:
                 has_descended = True
 
-            if has_descended:
-                if alt < min_descending_alt:
-                    min_descending_alt = alt
-                    best_land = t
-
-                # Check for impact shockwave / velocity leveling:
-                # If board has descended to near baseline and either rebounds or experiences shock deceleration
+            # Genuine landing requires having descended AND being physically in the ground band
+            if has_descended and alt <= ground_touchdown_band:
                 shockwave = max(0.0, a_d) + max(0.0, a_h)
-                if best_land is not None and t >= best_land + 1:
-                    is_near_baseline = alt <= min_descending_alt + self.ground_proximity_threshold
-                    is_impact_or_rebound = (v >= -50.0) or (shockwave >= self.shock_acc_threshold)
-                    if is_near_baseline and is_impact_or_rebound:
-                        return int(t)
+                # Landing impact occurs when velocity rebounds from descent (v >= -150) or shockwave spike fires
+                if (v >= -150.0) or (shockwave >= self.shock_acc_threshold):
+                    best_land = t
+                    break
 
-        return int(best_land)
+        if best_land is not None:
+            return int(best_land)
+
+        # Fallback: frame of minimum altitude within search range
+        min_idx = search_start + int(np.nanargmin(sub_alt))
+        return int(min_idx)
+
 

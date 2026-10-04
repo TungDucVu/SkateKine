@@ -85,15 +85,18 @@ class PersistentCatchDetector:
             mean_window_score = float(np.mean(window_scores))
 
             if min_window_score >= self.tau_catch_score:
-                # First valid sustained contact window
+                # Verify foot-board continuity into landing (prevents false catches on bails where feet disconnect before touchdown)
+                land_check_frame = min(n - 1, t_land_cand)
+                land_dist = min_ankle_dist[land_check_frame] if not np.isnan(min_ankle_dist[land_check_frame]) else 0.0
+                if land_dist > 80.0:
+                    continue  # Feet disconnected before landing (bail)
+                # First valid sustained contact window leading to touchdown
                 return int(t), mean_window_score
 
             if mean_window_score > best_score:
                 best_score = mean_window_score
                 best_t = t
 
-        # If strict persistence not met (e.g. bail or loose catch), return candidate if above moderate threshold
-        if best_score >= 0.40 and best_t is not None:
-            return int(best_t), best_score
-
+        # If strict persistence not met (e.g. bail where board is never caught), return None [A3]
         return None, best_score
+
