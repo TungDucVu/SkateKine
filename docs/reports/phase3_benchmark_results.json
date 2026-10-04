@@ -1,0 +1,455 @@
+{
+  "timestamp": "2026-10-05T00:23:47Z",
+  "execution_time_sec": 13.573245763778687,
+  "dataset_overview": {
+    "total_clips_in_store": 32,
+    "canonical_9_clips": 26,
+    "unique_skaters": 9,
+    "classes_represented": 9
+  },
+  "post_impact_bail_gate": {
+    "total_evaluated_attempts": 32,
+    "tri_state_distribution": {
+      "LANDED": 30,
+      "BAILED": 2
+    },
+    "f1_score": 0.9473684210526315,
+    "precision": 0.9,
+    "recall": 1.0,
+    "bail_fpr": 0.0,
+    "confusion_matrix": [
+      [
+        2,
+        3
+      ],
+      [
+        0,
+        27
+      ]
+    ],
+    "gate_status_pass": true
+  },
+  "model_a_calibrated_rules": {
+    "end_to_end": {
+      "macro_f1": 0.13703703703703704,
+      "accuracy": 0.15384615384615385
+    },
+    "oracle": {
+      "macro_f1": 0.13703703703703704,
+      "accuracy": 0.15384615384615385
+    }
+  },
+  "model_b_xgboost_nested_cv": {
+    "end_to_end": {
+      "macro_f1": 0.031746031746031744,
+      "weighted_f1": 0.03296703296703297,
+      "top1_accuracy": 0.038461538461538464,
+      "top2_accuracy": 0.19230769230769232,
+      "per_class_f1": {
+        "360 Flip": 0.2857142857142857,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.0,
+        "Kickflip": 0.0,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.0
+      },
+      "per_class_precision": {
+        "360 Flip": 0.25,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.0,
+        "Kickflip": 0.0,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.0
+      },
+      "per_class_recall": {
+        "360 Flip": 0.3333333333333333,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.0,
+        "Kickflip": 0.0,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.0
+      },
+      "confusion_matrix": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          2
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ],
+      "shap_importance": {
+        "right_foot_dist": 0.08014260977506638,
+        "apex_hip_y": 0.07559940963983536,
+        "flick_dy": 0.07109834253787994,
+        "jerk_mean": 0.06310178339481354,
+        "land_board_y": 0.06233641132712364,
+        "bvel_y_std": 0.06161860376596451,
+        "land_hip_y": 0.06013280898332596,
+        "jerk_std": 0.05564460530877113,
+        "bacc_y_mean": 0.052710216492414474,
+        "bvel_y_mean": 0.04921805486083031,
+        "apex_board_y": 0.04692058637738228,
+        "omega_peak": 0.040625687688589096,
+        "left_foot_dist": 0.039797063916921616,
+        "jerk_max": 0.037781309336423874,
+        "board_width_pop": 0.03169897571206093
+      },
+      "nested_cv_results": [
+        {
+          "fold": 0,
+          "test_skaters": [
+            "player_a"
+          ],
+          "n_test_samples": 14,
+          "best_depth": 3,
+          "best_lr": 0.05,
+          "fold_acc": 0.0
+        },
+        {
+          "fold": 1,
+          "test_skaters": [
+            "sewa_kroetkov",
+            "luan_oliveira"
+          ],
+          "n_test_samples": 4,
+          "best_depth": 3,
+          "best_lr": 0.05,
+          "fold_acc": 0.0
+        },
+        {
+          "fold": 2,
+          "test_skaters": [
+            "shane_oneill",
+            "cody_cepeda",
+            "torey_pudwill"
+          ],
+          "n_test_samples": 4,
+          "best_depth": 3,
+          "best_lr": 0.1,
+          "fold_acc": 0.25
+        },
+        {
+          "fold": 3,
+          "test_skaters": [
+            "chris_joslin",
+            "chris_cole",
+            "sean_malto"
+          ],
+          "n_test_samples": 4,
+          "best_depth": 3,
+          "best_lr": 0.05,
+          "fold_acc": 0.0
+        }
+      ]
+    },
+    "oracle": {
+      "macro_f1": 0.031746031746031744,
+      "top1_accuracy": 0.038461538461538464,
+      "top2_accuracy": 0.19230769230769232,
+      "per_class_f1": {
+        "360 Flip": 0.2857142857142857,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.0,
+        "Kickflip": 0.0,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.0
+      }
+    }
+  },
+  "model_c_stgcn_graph": {
+    "macro_f1": 0.2507295173961841,
+    "accuracy": 0.34615384615384615,
+    "top2_accuracy": 0.6923076923076923,
+    "num_nodes": 25,
+    "sequence_length": 64,
+    "raw_rgb_downstream": false
+  },
+  "systematic_ablations": {
+    "A0_raw_positions": {
+      "num_features": 7,
+      "macro_f1": 0.13445378151260504,
+      "weighted_f1": 0.18034906270200385,
+      "accuracy": 0.23076923076923078,
+      "feature_list": [
+        "pop_board_y",
+        "apex_board_y",
+        "land_board_y",
+        "pop_hip_y",
+        "apex_hip_y",
+        "land_hip_y",
+        "flight_duration_sec"
+      ]
+    },
+    "A1_pose_only": {
+      "num_features": 10,
+      "macro_f1": 0.06137566137566138,
+      "weighted_f1": 0.09450549450549452,
+      "accuracy": 0.11538461538461539,
+      "feature_list": [
+        "flight_duration_sec",
+        "ascent_ratio",
+        "apex_displacement_px",
+        "flick_dx",
+        "flick_dy",
+        "flick_vel_mag",
+        "flick_direction_x",
+        "pop_hip_y",
+        "apex_hip_y",
+        "land_hip_y"
+      ]
+    },
+    "A2_board_only": {
+      "num_features": 18,
+      "macro_f1": 0.06153846153846154,
+      "weighted_f1": 0.08165680473372783,
+      "accuracy": 0.07692307692307693,
+      "feature_list": [
+        "flight_duration_sec",
+        "ascent_ratio",
+        "delta_theta_net",
+        "canonical_delta_theta_net",
+        "theta_abs",
+        "rot_consistency",
+        "omega_peak",
+        "omega_mean",
+        "flip_cycle_count",
+        "min_aspect",
+        "aspect_std",
+        "aspect_range",
+        "bvel_x_mean",
+        "bvel_y_mean",
+        "bacc_y_mean",
+        "pop_board_y",
+        "apex_board_y",
+        "land_board_y"
+      ]
+    },
+    "A3_pose_plus_board": {
+      "num_features": 11,
+      "macro_f1": 0.1186299081035923,
+      "weighted_f1": 0.1474840948525159,
+      "accuracy": 0.19230769230769232,
+      "feature_list": [
+        "flight_duration_sec",
+        "ascent_ratio",
+        "apex_displacement_px",
+        "pop_board_y",
+        "apex_board_y",
+        "land_board_y",
+        "pop_hip_y",
+        "apex_hip_y",
+        "land_hip_y",
+        "left_foot_dist",
+        "right_foot_dist"
+      ]
+    },
+    "A4_coords_plus_velocities": {
+      "num_features": 16,
+      "macro_f1": 0.082010582010582,
+      "weighted_f1": 0.1043956043956044,
+      "accuracy": 0.11538461538461539,
+      "feature_list": [
+        "flight_duration_sec",
+        "ascent_ratio",
+        "apex_displacement_px",
+        "pop_board_y",
+        "apex_board_y",
+        "land_board_y",
+        "pop_hip_y",
+        "apex_hip_y",
+        "land_hip_y",
+        "bvel_x_mean",
+        "bvel_x_std",
+        "bvel_y_mean",
+        "bvel_y_std",
+        "flick_vel_mag",
+        "omega_mean",
+        "omega_peak"
+      ]
+    },
+    "A5_full_engineered_dynamics": {
+      "num_features": 39,
+      "macro_f1": 0.0,
+      "weighted_f1": 0.0,
+      "accuracy": 0.0,
+      "feature_list": [
+        "flight_duration_sec",
+        "ascent_ratio",
+        "apex_displacement_px",
+        "has_catch",
+        "delta_theta_net",
+        "canonical_delta_theta_net",
+        "theta_abs",
+        "rot_consistency",
+        "omega_peak",
+        "omega_mean",
+        "canonical_omega_mean",
+        "flip_cycle_count",
+        "min_aspect",
+        "aspect_std",
+        "aspect_range",
+        "flick_dx",
+        "flick_dy",
+        "flick_vel_mag",
+        "flick_direction_x",
+        "bvel_x_mean",
+        "bvel_x_std",
+        "bvel_x_max",
+        "bvel_y_mean",
+        "bvel_y_std",
+        "bvel_y_max",
+        "bacc_y_mean",
+        "bacc_y_std",
+        "bacc_y_max",
+        "jerk_mean",
+        "jerk_std",
+        "jerk_max",
+        "left_foot_dist",
+        "right_foot_dist",
+        "pop_board_y",
+        "apex_board_y",
+        "land_board_y",
+        "pop_hip_y",
+        "apex_hip_y",
+        "land_hip_y"
+      ]
+    }
+  },
+  "latency_profiling": {
+    "inference_latency_per_clip_ms": 0.7147939968854189,
+    "ms_per_frame": 0.004765293312569459,
+    "real_time_factor_rtf": 0.00028591759875416756,
+    "hardware": "CPU (x86_64) Single-Threaded"
+  },
+  "qc_gates": {
+    "end_to_end_macro_f1": 0.031746031746031744,
+    "gate_end_to_end_f1_target": 0.82,
+    "min_class_f1": 0.0,
+    "gate_min_class_f1_target": 0.7,
+    "top2_accuracy": 0.19230769230769232,
+    "gate_top2_target": 0.92,
+    "bail_f1": 0.9473684210526315,
+    "gate_bail_f1_target": 0.8,
+    "bail_fpr": 0.0,
+    "gate_bail_fpr_target": 0.08,
+    "pipeline_rtf": 0.00028591759875416756,
+    "gate_rtf_target": 0.5,
+    "gate_3_and_4_passed": false
+  }
+}

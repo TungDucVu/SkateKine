@@ -1,0 +1,300 @@
+{
+  "overview": {
+    "total_manifest_clips": 1035,
+    "tracking_eligible_clips": 961,
+    "canonical_9_total_clips": 727,
+    "canonical_9_tracking_eligible": 688
+  },
+  "canonical_class_distribution": {
+    "Kickflip": 166,
+    "Heelflip": 155,
+    "Frontside Shove-it": 57,
+    "Pop Shove-it": 55,
+    "Frontside 180": 55,
+    "Varial / Hardflip": 53,
+    "Backside 180": 53,
+    "Ollie": 52,
+    "360 Flip": 42
+  },
+  "skater_diversity_per_class": {
+    "360 Flip": {
+      "total_clips": 46,
+      "unique_skaters": 13,
+      "skater_list": [
+        "luan_oliveira",
+        "chris_cole",
+        "cody_cepeda",
+        "jack_colbourn",
+        "dennis_busenitz",
+        "tom_fyock",
+        "chris_joslin",
+        "nick_tucker",
+        "pj_ladd",
+        "torey_pudwill",
+        "sean_malto",
+        "sewa_kroetkov",
+        "shane_oneill"
+      ],
+      "max_single_skater_share": 0.15217391304347827
+    },
+    "Backside 180": {
+      "total_clips": 53,
+      "unique_skaters": 3,
+      "skater_list": [
+        "player_a",
+        "jack_colbourn",
+        "sean_malto"
+      ],
+      "max_single_skater_share": 0.9622641509433962
+    },
+    "Frontside 180": {
+      "total_clips": 56,
+      "unique_skaters": 4,
+      "skater_list": [
+        "player_a",
+        "shane_oneill",
+        "jack_colbourn",
+        "sean_malto"
+      ],
+      "max_single_skater_share": 0.9464285714285714
+    },
+    "Frontside Shove-it": {
+      "total_clips": 57,
+      "unique_skaters": 6,
+      "skater_list": [
+        "player_a",
+        "sean_malto",
+        "cody_cepeda",
+        "jack_colbourn",
+        "tom_fyock",
+        "sewa_kroetkov"
+      ],
+      "max_single_skater_share": 0.8771929824561403
+    },
+    "Heelflip": {
+      "total_clips": 168,
+      "unique_skaters": 16,
+      "skater_list": [
+        "player_a",
+        "chris_cole",
+        "chris_joslin",
+        "pj_ladd",
+        "shane_oneill",
+        "sewa_kroetkov",
+        "cody_cepeda",
+        "nick_tucker",
+        "jack_colbourn",
+        "sean_malto",
+        "torey_pudwill",
+        "dennis_busenitz",
+        "luan_oliveira",
+        "thrasher_unknown",
+        "tom_fyock",
+        "ishod_wair"
+      ],
+      "max_single_skater_share": 0.2976190476190476
+    },
+    "Kickflip": {
+      "total_clips": 186,
+      "unique_skaters": 15,
+      "skater_list": [
+        "player_a",
+        "chris_joslin",
+        "dennis_busenitz",
+        "jack_colbourn",
+        "sean_malto",
+        "luan_oliveira",
+        "torey_pudwill",
+        "sewa_kroetkov",
+        "nick_tucker",
+        "chris_cole",
+        "shane_oneill",
+        "tom_fyock",
+        "ishod_wair",
+        "cody_cepeda",
+        "pj_ladd"
+      ],
+      "max_single_skater_share": 0.2903225806451613
+    },
+    "Ollie": {
+      "total_clips": 52,
+      "unique_skaters": 2,
+      "skater_list": [
+        "player_a",
+        "player_b"
+      ],
+      "max_single_skater_share": 0.9230769230769231
+    },
+    "Pop Shove-it": {
+      "total_clips": 55,
+      "unique_skaters": 3,
+      "skater_list": [
+        "player_a",
+        "luan_oliveira",
+        "torey_pudwill"
+      ],
+      "max_single_skater_share": 0.9636363636363636
+    },
+    "Varial / Hardflip": {
+      "total_clips": 54,
+      "unique_skaters": 11,
+      "skater_list": [
+        "chris_joslin",
+        "nick_tucker",
+        "sewa_kroetkov",
+        "luan_oliveira",
+        "cody_cepeda",
+        "shane_oneill",
+        "jack_colbourn",
+        "chris_cole",
+        "tom_fyock",
+        "sean_malto",
+        "torey_pudwill"
+      ],
+      "max_single_skater_share": 0.35185185185185186
+    }
+  },
+  "stance_distribution": {
+    "goofy": 413,
+    "regular": 232,
+    "nollie": 154,
+    "fakie": 153,
+    "switch": 59,
+    "unknown": 24
+  },
+  "source_dataset_distribution": {
+    "thrasher_batb": 598,
+    "archive_highspeed": 413,
+    "skaterxl_synthetic": 24
+  },
+  "fps_bucket_distribution": {
+    "60_fps": 576,
+    "high_speed_100_120_fps": 404,
+    "30_fps": 55
+  },
+  "outcome_by_canonical_class": {
+    "360 Flip": {
+      "land": 39,
+      "bail": 7
+    },
+    "Backside 180": {
+      "land": 53
+    },
+    "Frontside 180": {
+      "land": 56
+    },
+    "Frontside Shove-it": {
+      "land": 57
+    },
+    "Heelflip": {
+      "land": 153,
+      "bail": 15
+    },
+    "Kickflip": {
+      "land": 149,
+      "bail": 37
+    },
+    "Ollie": {
+      "land": 52
+    },
+    "Pop Shove-it": {
+      "land": 54,
+      "bail": 1
+    },
+    "Varial / Hardflip": {
+      "land": 37,
+      "bail": 17
+    }
+  },
+  "trajectory_store_status": {
+    "total_parquet_files": 25,
+    "pilot_clips_with_traj": 25,
+    "canonical_clips_with_traj": 19,
+    "classes_in_traj_store": {
+      "Kickflip": 6,
+      "Heelflip": 3,
+      "Varial / Hardflip": 3,
+      "Frontside 180": 3,
+      "Ollie": 2,
+      "Backside 180": 2
+    },
+    "skaters_in_traj_store": {
+      "player_a": 10,
+      "chris_joslin": 5,
+      "sewa_kroetkov": 4,
+      "shane_oneill": 3,
+      "jack_colbourn": 1,
+      "torey_pudwill": 1,
+      "sean_malto": 1
+    },
+    "outcomes_in_traj_store": {
+      "land": 20,
+      "bail": 5
+    }
+  },
+  "mechanical_specifications": {
+    "Ollie": {
+      "yaw_deg": 0,
+      "roll_deg": 0,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "none",
+      "flip_dir": "none"
+    },
+    "Frontside 180": {
+      "yaw_deg": 180,
+      "roll_deg": 0,
+      "body_yaw_deg": 180,
+      "shuvit_dir": "frontside",
+      "flip_dir": "none"
+    },
+    "Backside 180": {
+      "yaw_deg": -180,
+      "roll_deg": 0,
+      "body_yaw_deg": -180,
+      "shuvit_dir": "backside",
+      "flip_dir": "none"
+    },
+    "Pop Shove-it": {
+      "yaw_deg": -180,
+      "roll_deg": 0,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "backside",
+      "flip_dir": "none"
+    },
+    "Frontside Shove-it": {
+      "yaw_deg": 180,
+      "roll_deg": 0,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "frontside",
+      "flip_dir": "none"
+    },
+    "Kickflip": {
+      "yaw_deg": 0,
+      "roll_deg": 360,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "none",
+      "flip_dir": "toe_side"
+    },
+    "Heelflip": {
+      "yaw_deg": 0,
+      "roll_deg": 360,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "none",
+      "flip_dir": "heel_side"
+    },
+    "Varial / Hardflip": {
+      "yaw_deg": 180,
+      "roll_deg": 360,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "variable",
+      "flip_dir": "toe_side"
+    },
+    "360 Flip": {
+      "yaw_deg": -360,
+      "roll_deg": 360,
+      "body_yaw_deg": 0,
+      "shuvit_dir": "backside",
+      "flip_dir": "toe_side"
+    }
+  }
+}
