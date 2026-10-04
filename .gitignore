@@ -54,9 +54,7 @@ Thumbs.db
 *.tar.gz
 *.zip
 *.7z
-data/*
-!data/metadata/
-!data/references/
+data/
 raw_data/
 datasets/
 videos/
