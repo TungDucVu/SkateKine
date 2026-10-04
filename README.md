@@ -30,7 +30,7 @@ Raw Video ──> Pose + Board Tracking ──> Canonical Coordinates ──> Te
 - [x] Master Research & Implementation Specification (`MASTER_FINAL.md`)
 - [x] Project Requirements & Resource Tracking Registry (`REQUIREMENT.md`)
 - [x] Phase Implementation Plans & QC Reporting Framework (`docs/`)
-- [ ] Phase 1: Video Ingestion & Spatial Tracking
+- [x] Phase 1: Video Ingestion & Spatial Tracking (Pilot Certified)
 - [ ] Phase 2: Temporal Event Localization & Phase Segmentation
 - [ ] Phase 3: Trick Classification & Land/Bail Gating
 - [ ] Phase 4: Kinematic Cleanliness Regression & Calibration
