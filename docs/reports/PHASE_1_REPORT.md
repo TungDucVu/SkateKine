@@ -45,6 +45,10 @@ Phase 1 established the end-to-end spatial perception engine of SkateKine, trans
 * **Pilot Certification Test Suite:** `tests/test_pilot_pipeline.py`
 * **Persisted Parquet Trajectories:** `features/v1_trajectories/*.parquet` (25 pilot files generated)
 * **Empirical Pilot Benchmark Summary:** `docs/reports/pilot_benchmark_results.json`
+* **Video Telemetry Renderer:** `src/visualization/render_clip.py`
+* **25 Full Telemetry Videos:** `outputs/telemetry_videos/*.mp4` (25 rendered videos with HUD overlays)
+* **25-Clip Apex Telemetry Contact Sheet:** `docs/visualizations/telemetry_25_clips_grid.png`
+* **Phase 1 Pilot Telemetry Report:** `docs/reports/PHASE_1_REPORT.md`
 
 ---
 
