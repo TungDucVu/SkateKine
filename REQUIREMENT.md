@@ -182,7 +182,7 @@ Before advancing through implementation phases, the following prerequisite check
 
 - [x] Master specification defined (`MASTER_FINAL.md`).
 - [x] Project resource and data requirements registry established (`REQUIREMENT.md`).
-- [ ] Phase-by-phase implementation plans generated in `docs/`.
-- [ ] Video manifest format established (`data/metadata/video_manifest.csv`).
+- [x] Phase-by-phase implementation plans generated in `docs/`.
+- [x] Video manifest format established (`data/metadata/video_manifest.csv`).
 - [ ] Conda / venv environment created with pinned requirements.
 - [ ] GPU compute availability and CUDA driver validation confirmed.
