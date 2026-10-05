@@ -119,7 +119,7 @@ An in-depth architectural audit diagnosed the root cause:
 4. **Audit Results:**
    * Audited Compact ST-GCN Macro F1 rose from $1.7\%$ to **$9.76\%$** (Top-1: $13.64\%$, Top-2: $30.00\%$).
    * On Fold 1 (testing exclusively unseen pro skaters: `sewa_kroetkov`, `luan_oliveira`, `chris_cole`, `pj_ladd`, `torey_pudwill`, `tom_fyock`), ST-GCN reached **$22.7\%$ Accuracy**.
-5. **Architectural Verdict:** ST-GCN is not structurally flawed, but spatio-temporal graph convolutions are fundamentally sample-starved at $N=110$ attempts ($8\text{--}19$ clips per class). Deep spatio-temporal convolution kernels require hundreds of examples per class to surpass physics-engineered tabular gradient boosted trees ($16.16\%$ Macro F1, $38.2\%$ Top-2).
+5. **Architectural Verdict:** ST-GCN is not structurally flawed, but at the current $N=110$ scale, the ST-GCN does not obtain sufficient data to outperform the physics-engineered XGBoost baseline under strict unseen-skater evaluation ($9.76\%$ vs. $16.16\%$ Macro F1, $30.0\%$ vs. $38.2\%$ Top-2).
 
 ### 2.4 The Skater-Confounding Thesis: Empirical Evidence
 To quantify the impact of skater overlap versus strict cross-skater generalization, the exact same 110 canonical clips were evaluated under two protocols:
@@ -135,13 +135,13 @@ To quantify the impact of skater overlap versus strict cross-skater generalizati
 
 $$\Delta_{\text{confounding}} = \text{Macro F1}_{\text{stratified}} - \text{Macro F1}_{\text{GroupKFold}} = 34.40\% - 15.63\% = \mathbf{+18.77\%}$$
 
-**Scientific Finding:** This $+18.77\%$ performance gap provides definitive **skater-overlap / confounding evidence**. When skater overlap is permitted, the model easily achieves $34.4\%$ Macro F1 (with 5 classes exceeding 40%–55% F1). Under strict unseen-skater holdouts, performance drops to $15.6\%$ because the training folds lack the cross-skater variance needed to decouple trick kinematics from individual skater style.
+**Scientific Finding:** This $+18.77\%$ performance gap provides definitive **evidence of performance inflation under skater overlap / skater confounding**. When skater overlap is permitted, the model achieves $34.40\%$ Macro F1 (with 5 classes exceeding 40%–55% F1). Under strict unseen-skater holdouts, performance drops to $15.63\%$ because the training folds lack the cross-skater variance needed to decouple trick kinematics from individual skater style.
 
-### 2.5 Complete Recovery of Varial / Hardflip ($0\% \rightarrow 55\%$)
+### 2.5 Recovery of Varial / Hardflip ($0\% \rightarrow 55\%$)
 In earlier runs, `Varial / Hardflip` collapsed entirely to $0.0\%$ F1. In Step 3.5.3:
 * Expanding the store added 12 high-quality pro skater Varial attempts across 7 pro skaters (`chris_joslin`, `sewa_kroetkov`, `luan_oliveira`, `cody_cepeda`, `shane_oneill`, `jack_colbourn`, `tom_fyock`), reaching $N=19$ attempts.
 * Kinematic feature engineering introduced composite rotational interaction terms (`flip_yaw_product` and `rotational_consistency`).
-* **Result:** Varial / Hardflip rose from **$0.0\%$ to $55.00\%$ F1** ($52.4\%$ Precision, $57.9\%$ Recall), proving that providing adequate cross-skater samples and rotational descriptors immediately unlocks robust cross-skater classification.
+* **Result:** Varial / Hardflip rose from **$0.0\%$ to $55.00\%$ F1** ($52.4\%$ Precision, $57.9\%$ Recall). The result provides strong evidence that increased cross-skater coverage combined with improved rotational descriptors substantially improves Varial/Hardflip separability.
 
 ---
 
@@ -207,7 +207,7 @@ Varial      0     0      2      4       0      2      0      0      11
 
 | Canonical Class | Store Samples ($N$) | Unique Skaters | Unweighted F1 | Weighted F1 | Precision | Recall | Generalization Diagnosis |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Varial / Hardflip** | 19 | 7 | **$55.00\%$** | $47.37\%$ | $52.4\%$ | $57.9\%$ | **Fully Recovered:** Robust cross-skater rotation signal. |
+| **Varial / Hardflip** | 19 | 7 | **$55.00\%$** | $47.37\%$ | $52.4\%$ | $57.9\%$ | **Substantially Improved:** Promising evidence of separability with 7 pro skaters. |
 | **360 Flip (Tre Flip)** | 9 | 7 | $26.67\%$ | **$42.86\%$** | $60.0\%$ | $33.3\%$ | **Strong Lift with Weighting:** Distinct compound flip. |
 | **Kickflip** | 13 | 6 | $16.00\%$ | $14.29\%$ | $16.7\%$ | $15.4\%$ | Moderate separation; confounded with Heelflip/Varial. |
 | **Ollie** | 8 | 2 | $15.38\%$ | $15.09\%$ | $9.1\%$ | $50.0\%$ | Manifest has only 2 skaters; false positives from 180s. |

@@ -276,8 +276,7 @@ class Phase3Engine:
                 'total_attempts': len(sub_c),
                 'unique_skaters': len(sk_counts),
                 'skaters': list(sk_counts.keys()),
-                'skater_counts': sk_counts,
-                'pro_skater_count': sum(cnt for sk, cnt in sk_counts.items() if sk not in ['player_a', 'player_b'])
+                'skater_counts': sk_counts
             }
 
         print(f"\nEvaluating Trick Classifiers on {len(df_p_canon)} Canonical Attempts across {skaters.nunique()} Skaters...")
@@ -461,7 +460,7 @@ class Phase3Engine:
                 'normalization': 'torso-length scaled & root-relative hip-centered',
                 'regularization': 'drop-edge p=0.2 & weight decay 1e-3',
                 'fold_breakdown': fold_scores,
-                'findings': 'ST-GCN recovers from 1.7% to 9.1% F1 with drop-edge & torso normalization, reaching 22.7% on unseen pro skaters, but remains severely sample-starved at N=110 attempts.'
+                'findings': f'ST-GCN recovers from 1.7% to {stgcn_compact_macro_f1*100:.2f}% F1 with drop-edge & torso normalization, reaching 22.7% on unseen pro skaters, but remains severely sample-starved at N=110 attempts.'
             },
             'zero_raw_rgb_downstream': True
         }
