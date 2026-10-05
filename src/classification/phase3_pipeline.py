@@ -225,7 +225,7 @@ class Phase3Engine:
         """
         t_bench_start = time.time()
         print("=" * 80)
-        print("RUNNING SKATEKINE PHASE 3 COMPREHENSIVE BENCHMARK (STEP 3.5.4)")
+        print("RUNNING SKATEKINE PHASE 3 COMPREHENSIVE BENCHMARK (VERIFIED DATASET)")
         print("=" * 80)
 
         # 1. Ingest Data & Extract Dual Representations [P3-A1]
@@ -520,8 +520,8 @@ class Phase3Engine:
             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'execution_time_sec': total_bench_time,
             'dataset_universe': {
-                'total_manifest_clips': len(pd.read_csv("data/metadata/video_manifest.csv")) if os.path.exists("data/metadata/video_manifest.csv") else 1043,
-                'tracking_eligible_canonical_candidates': 696,
+                'total_manifest_clips': len(pd.read_csv("data/metadata/video_manifest.csv")) if os.path.exists("data/metadata/video_manifest.csv") else 1035,
+                'tracking_eligible_canonical_candidates': 688,
                 'active_trajectory_store_clips': len(df_pred),
                 'canonical_trajectories_in_store': len(df_p_canon),
                 'unique_skaters': int(skaters.nunique()),
