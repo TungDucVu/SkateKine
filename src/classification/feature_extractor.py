@@ -129,6 +129,16 @@ class KinematicFeatureExtractor:
             flick_vel_mag = 0.0
             flick_direction_x = 0.0
 
+        # Front ankle local Y displacement (toe vs heel side)
+        front_ankle_local_y_col = 'right_ankle_board_local_y' if is_goofy else 'left_ankle_board_local_y'
+        if front_ankle_local_y_col in flight_df and len(flight_df[front_ankle_local_y_col].dropna()) > 1:
+            pop_ankle_local_y = float(flight_df[front_ankle_local_y_col].iloc[0])
+            f_end = min(len(flight_df) - 1, max(1, flick_frames))
+            flick_ankle_local_y = float(flight_df[front_ankle_local_y_col].iloc[f_end])
+            flick_local_y_delta = float((flick_ankle_local_y - pop_ankle_local_y) * stance_sign)
+        else:
+            flick_local_y_delta = 0.0
+
         # 6. Torso & Body Kinematics
         if 'mid_hip_x' in df_traj and 'mid_hip_y' in df_traj:
             pop_hip_y = df_traj['mid_hip_y'].iloc[t_pop]
@@ -145,29 +155,39 @@ class KinematicFeatureExtractor:
         pop_w = df_traj.iloc[max(0, t_pop - 5):min(len(df_traj), t_pop + 5)]
         land_w = df_traj.iloc[max(0, t_land - 5):min(len(df_traj), t_land + 5)]
 
+        l_pop = max(20.0, float(pop_w['apparent_length'].median())) if 'apparent_length' in pop_w and len(pop_w['apparent_length'].dropna()) > 0 else 100.0
+        l_land = max(20.0, float(land_w['apparent_length'].median())) if 'apparent_length' in land_w and len(land_w['apparent_length'].dropna()) > 0 else 100.0
+
         pop_feet_dx = float((pop_w['left_ankle_x'] - pop_w['right_ankle_x']).median()) if 'left_ankle_x' in pop_w else 0.0
         land_feet_dx = float((land_w['left_ankle_x'] - land_w['right_ankle_x']).median()) if 'left_ankle_x' in land_w else 0.0
 
-        if not np.isnan(pop_feet_dx) and not np.isnan(land_feet_dx) and abs(pop_feet_dx) > 1.0 and abs(land_feet_dx) > 1.0:
-            skater_yaw_swap = 1.0 if (pop_feet_dx * land_feet_dx) < 0 else 0.0
+        if not np.isnan(pop_feet_dx) and not np.isnan(land_feet_dx) and abs(pop_feet_dx) > 1.0:
+            feet_swap = 1.0 if (pop_feet_dx * land_feet_dx) < 0 else 0.0
             delta_feet_dx = float((land_feet_dx - pop_feet_dx) * stance_sign)
+            delta_feet_norm = float(((land_feet_dx / l_land) - (pop_feet_dx / l_pop)) * stance_sign)
         else:
-            skater_yaw_swap = 0.0
+            feet_swap = 0.0
             delta_feet_dx = 0.0
+            delta_feet_norm = 0.0
+        skater_yaw_swap = feet_swap
 
         # 8. Board Yaw & Foreshortening Trough Dynamics (Shove-it discrimination)
         lens = flight_df['apparent_length'].dropna() if 'apparent_length' in flight_df else pd.Series([])
-        l_pop = float(lens.iloc[0]) if len(lens) > 0 and lens.iloc[0] > 10.0 else 200.0
         min_norm_length = float(lens.min() / l_pop) if len(lens) > 0 else 1.0
         board_length_std = float(lens.std()) if len(lens) > 1 else 0.0
 
         # Board nose-to-tail inversion
         pop_b_dx = float((pop_w['board_nose_x'] - pop_w['board_tail_x']).median()) if 'board_nose_x' in pop_w else 0.0
         land_b_dx = float((land_w['board_nose_x'] - land_w['board_tail_x']).median()) if 'board_nose_x' in land_w else 0.0
-        if not np.isnan(pop_b_dx) and not np.isnan(land_b_dx) and abs(pop_b_dx) > 1.0 and abs(land_b_dx) > 1.0:
-            board_yaw_swap = 1.0 if (pop_b_dx * land_b_dx) < 0 else 0.0
+        if not np.isnan(pop_b_dx) and not np.isnan(land_b_dx) and abs(pop_b_dx) > 1.0:
+            board_swap = 1.0 if (pop_b_dx * land_b_dx) < 0 else 0.0
+            delta_board_norm = float(((land_b_dx / l_land) - (pop_b_dx / l_pop)) * stance_sign)
         else:
-            board_yaw_swap = 0.0
+            board_swap = 0.0
+            delta_board_norm = 0.0
+        board_yaw_swap = board_swap
+
+        diff_yaw_norm = float(delta_board_norm - delta_feet_norm)
 
         # 9. Flip-Yaw Composite Interaction (Varial / Hardflip / 360 Flip vs pure flips/shuvs)
         flip_depth = float(np.clip(1.0 - min_aspect, 0.0, 1.0))
@@ -212,10 +232,15 @@ class KinematicFeatureExtractor:
             'canonical_omega_mean': canonical_omega_mean,
             # Rotational axis & yaw discrimination [Phase 3.5]
             'skater_yaw_swap': skater_yaw_swap,
+            'feet_swap': feet_swap,
             'delta_feet_dx': delta_feet_dx,
+            'delta_feet_norm': delta_feet_norm,
             'min_norm_length': min_norm_length,
             'board_length_std': board_length_std,
             'board_yaw_swap': board_yaw_swap,
+            'board_swap': board_swap,
+            'delta_board_norm': delta_board_norm,
+            'diff_yaw_norm': diff_yaw_norm,
             'flip_yaw_product': flip_yaw_product,
             # Aspect & Flip dynamics [P3-A3]
             'flip_cycle_count': flip_cycle_count,
@@ -226,6 +251,7 @@ class KinematicFeatureExtractor:
             'flick_dy': flick_dy,
             'flick_vel_mag': flick_vel_mag,
             'flick_direction_x': flick_direction_x,
+            'flick_local_y_delta': flick_local_y_delta,
             # Board Kinematics
             'bvel_x_mean': bvel_x_mean,
             'bvel_x_std': bvel_x_std,

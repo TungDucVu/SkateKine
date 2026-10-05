@@ -20,11 +20,12 @@ FEATURE_COLUMNS = [
     'flight_duration_sec', 'ascent_ratio', 'apex_displacement_px', 'has_catch',
     'delta_theta_net', 'canonical_delta_theta_net', 'theta_abs', 'rot_consistency',
     'omega_peak', 'omega_mean', 'canonical_omega_mean',
-    'skater_yaw_swap', 'delta_feet_dx',
-    'min_norm_length', 'board_length_std', 'board_yaw_swap',
+    'skater_yaw_swap', 'feet_swap', 'delta_feet_dx', 'delta_feet_norm',
+    'min_norm_length', 'board_length_std', 'board_yaw_swap', 'board_swap',
+    'delta_board_norm', 'diff_yaw_norm',
     'flip_yaw_product',
     'flip_cycle_count', 'min_aspect', 'aspect_std', 'aspect_range',
-    'flick_dx', 'flick_dy', 'flick_vel_mag', 'flick_direction_x',
+    'flick_dx', 'flick_dy', 'flick_vel_mag', 'flick_direction_x', 'flick_local_y_delta',
     'bvel_x_mean', 'bvel_x_std', 'bvel_x_max',
     'bvel_y_mean', 'bvel_y_std', 'bvel_y_max',
     'bacc_y_mean', 'bacc_y_std', 'bacc_y_max',
@@ -141,9 +142,24 @@ class SkateboardTreeClassifier:
                             best_depth = depth_cand
                             best_lr = lr_cand
 
+            # Stance Mirroring Augmentation (Juriga 2023) [Step 3.5.5]
+            directional_cols = [
+                'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
+                'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
+                'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean'
+            ]
+            dir_indices = [feat_cols.index(c) for c in directional_cols if c in feat_cols]
+
+            X_tr_mirror = X_train.copy()
+            for d_idx in dir_indices:
+                X_tr_mirror[:, d_idx] *= -1.0
+
+            X_train_aug = np.vstack([X_train, X_tr_mirror])
+            y_train_aug = np.concatenate([y_train, y_train])
+
             # Train final model for this fold using best tuned parameters
             le_outer = LabelEncoder()
-            y_tr_enc = le_outer.fit_transform(y_train)
+            y_tr_enc = le_outer.fit_transform(y_train_aug)
             w_tr = compute_sample_weight('balanced', y_tr_enc) if use_class_weighting else None
 
             model = xgb.XGBClassifier(
@@ -154,7 +170,7 @@ class SkateboardTreeClassifier:
                 random_state=self.seed,
                 n_jobs=1
             )
-            model.fit(X_train, y_tr_enc, sample_weight=w_tr)
+            model.fit(X_train_aug, y_tr_enc, sample_weight=w_tr)
 
             # Predict on outer test fold and map to global class distribution
             probs_local = model.predict_proba(X_test)
