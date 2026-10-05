@@ -1,148 +1,137 @@
 {
-  "timestamp": "2026-10-05T00:48:14Z",
-  "execution_time_sec": 28.68063974380493,
+  "timestamp": "2026-10-05T17:44:38Z",
+  "execution_time_sec": 40.46613025665283,
   "dataset_overview": {
-    "total_clips_in_store": 78,
-    "canonical_9_clips": 72,
+    "total_clips_in_store": 125,
+    "canonical_9_clips": 110,
     "unique_skaters": 14,
     "classes_represented": 9
   },
   "post_impact_bail_gate": {
-    "total_evaluated_attempts": 78,
+    "total_evaluated_attempts": 125,
     "tri_state_distribution": {
-      "LANDED": 74,
-      "BAILED": 2,
-      "UNCERTAIN": 2
+      "LANDED": 96,
+      "BAILED": 26,
+      "UNCERTAIN": 3
     },
-    "f1_score": 0.9577464788732394,
-    "precision": 0.918918918918919,
-    "recall": 1.0,
-    "bail_fpr": 0.0,
+    "f1_score": 0.925531914893617,
+    "precision": 0.90625,
+    "recall": 0.9456521739130435,
+    "bail_fpr": 0.05434782608695652,
     "confusion_matrix": [
       [
-        2,
-        6
+        21,
+        9
       ],
       [
-        0,
-        68
+        5,
+        87
       ]
     ],
     "gate_status_pass": true
   },
   "model_a_calibrated_rules": {
     "end_to_end": {
-      "macro_f1": 0.06695309565578217,
-      "accuracy": 0.06944444444444445
+      "macro_f1": 0.08126470141974018,
+      "accuracy": 0.09090909090909091
     },
     "oracle": {
-      "macro_f1": 0.06695309565578217,
-      "accuracy": 0.06944444444444445
+      "macro_f1": 0.08126470141974018,
+      "accuracy": 0.09090909090909091
     }
   },
   "model_b_xgboost_nested_cv": {
     "end_to_end": {
-      "macro_f1": 0.13133446074622546,
-      "weighted_f1": 0.13787040845864373,
-      "top1_accuracy": 0.1527777777777778,
-      "top2_accuracy": 0.2361111111111111,
+      "macro_f1": 0.1563003663003663,
+      "weighted_f1": 0.17436197136197137,
+      "top1_accuracy": 0.19090909090909092,
+      "top2_accuracy": 0.3181818181818182,
       "per_class_f1": {
-        "360 Flip": 0.47058823529411764,
-        "Backside 180": 0.18181818181818182,
+        "360 Flip": 0.26666666666666666,
+        "Backside 180": 0.13333333333333333,
         "Frontside 180": 0.0,
         "Frontside Shove-it": 0.0,
-        "Heelflip": 0.15384615384615385,
-        "Kickflip": 0.13333333333333333,
-        "Ollie": 0.24242424242424243,
+        "Heelflip": 0.14285714285714285,
+        "Kickflip": 0.16,
+        "Ollie": 0.15384615384615385,
         "Pop Shove-it": 0.0,
-        "Varial / Hardflip": 0.0
+        "Varial / Hardflip": 0.55
       },
       "per_class_precision": {
-        "360 Flip": 0.5,
-        "Backside 180": 0.3333333333333333,
+        "360 Flip": 0.3333333333333333,
+        "Backside 180": 0.5,
         "Frontside 180": 0.0,
         "Frontside Shove-it": 0.0,
         "Heelflip": 0.2,
-        "Kickflip": 0.14285714285714285,
-        "Ollie": 0.16,
+        "Kickflip": 0.16666666666666666,
+        "Ollie": 0.09090909090909091,
         "Pop Shove-it": 0.0,
-        "Varial / Hardflip": 0.0
+        "Varial / Hardflip": 0.5238095238095238
       },
       "per_class_recall": {
-        "360 Flip": 0.4444444444444444,
-        "Backside 180": 0.125,
+        "360 Flip": 0.2222222222222222,
+        "Backside 180": 0.07692307692307693,
         "Frontside 180": 0.0,
         "Frontside Shove-it": 0.0,
-        "Heelflip": 0.125,
-        "Kickflip": 0.125,
+        "Heelflip": 0.1111111111111111,
+        "Kickflip": 0.15384615384615385,
         "Ollie": 0.5,
         "Pop Shove-it": 0.0,
-        "Varial / Hardflip": 0.0
+        "Varial / Hardflip": 0.5789473684210527
       },
       "confusion_matrix": [
         [
-          4,
-          1,
-          0,
-          0,
-          1,
-          1,
-          0,
-          2,
-          0
-        ],
-        [
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          6,
-          1,
-          0
-        ],
-        [
-          1,
-          0,
-          0,
-          1,
-          0,
-          0,
-          5,
-          0,
-          1
-        ],
-        [
-          0,
-          0,
-          0,
-          0,
-          2,
-          2,
-          2,
-          2,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
           2,
           1,
+          0,
           1,
-          2,
-          0,
-          2
-        ],
-        [
-          0,
-          0,
           2,
           3,
           0,
+          0,
+          0
+        ],
+        [
+          0,
           1,
+          0,
+          0,
+          0,
+          0,
+          11,
           1,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          1,
+          10,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          6,
+          1,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          3,
+          2,
           0,
           1
         ],
@@ -150,9 +139,20 @@
           0,
           0,
           1,
-          0,
-          0,
+          3,
           1,
+          2,
+          1,
+          1,
+          4
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
           4,
           2,
           0
@@ -161,23 +161,23 @@
           1,
           0,
           0,
+          0,
           1,
           0,
-          0,
-          5,
+          10,
           0,
           1
         ],
         [
+          0,
+          0,
           2,
-          1,
-          1,
-          1,
-          1,
-          1,
+          4,
+          0,
+          2,
           0,
           0,
-          0
+          11
         ]
       ],
       "classes": [
@@ -192,21 +192,21 @@
         "Varial / Hardflip"
       ],
       "shap_importance": {
-        "land_hip_y": 0.1710195094347,
-        "pop_board_y": 0.13815288245677948,
-        "apex_board_y": 0.137772336602211,
-        "jerk_mean": 0.11342346668243408,
-        "left_foot_dist": 0.10809557139873505,
-        "ascent_ratio": 0.06908464431762695,
-        "apex_hip_y": 0.06267831474542618,
-        "theta_abs": 0.061901241540908813,
-        "bacc_y_std": 0.048450350761413574,
-        "flick_dy": 0.04181843623518944,
-        "pop_hip_y": 0.04107222333550453,
-        "bvel_y_std": 0.03841637820005417,
-        "land_board_y": 0.0373975895345211,
-        "min_aspect": 0.034956566989421844,
-        "board_length_pop": 0.033775053918361664
+        "jerk_mean": 0.1763381063938141,
+        "apex_board_y": 0.1597696840763092,
+        "land_hip_y": 0.12279900908470154,
+        "left_foot_dist": 0.11487216502428055,
+        "pop_board_y": 0.09651321917772293,
+        "board_length_pop": 0.07116016000509262,
+        "theta_abs": 0.059754569083452225,
+        "apex_hip_y": 0.05685725435614586,
+        "right_foot_dist": 0.05540858581662178,
+        "board_width_pop": 0.05478910729289055,
+        "pop_hip_y": 0.05395495146512985,
+        "bvel_y_std": 0.045128341764211655,
+        "flick_dx": 0.04107137769460678,
+        "flick_dy": 0.038931407034397125,
+        "jerk_max": 0.03852212801575661
       },
       "nested_cv_results": [
         {
@@ -214,74 +214,90 @@
           "test_skaters": [
             "player_a"
           ],
-          "n_test_samples": 27,
+          "n_test_samples": 46,
           "best_depth": 3,
-          "best_lr": 0.1,
-          "fold_acc": 0.14814814814814814
+          "best_lr": 0.05,
+          "fold_acc": 0.08695652173913043
         },
         {
           "fold": 1,
           "test_skaters": [
-            "player_b",
             "sewa_kroetkov",
-            "cody_cepeda",
-            "pj_ladd"
+            "luan_oliveira",
+            "chris_cole",
+            "pj_ladd",
+            "torey_pudwill",
+            "tom_fyock"
           ],
-          "n_test_samples": 15,
+          "n_test_samples": 22,
           "best_depth": 3,
-          "best_lr": 0.05,
-          "fold_acc": 0.2
+          "best_lr": 0.1,
+          "fold_acc": 0.18181818181818182
         },
         {
           "fold": 2,
           "test_skaters": [
             "jack_colbourn",
             "chris_joslin",
-            "torey_pudwill",
-            "tom_fyock",
-            "ishod_wair"
+            "shane_oneill"
           ],
-          "n_test_samples": 15,
-          "best_depth": 3,
-          "best_lr": 0.05,
-          "fold_acc": 0.06666666666666667
+          "n_test_samples": 21,
+          "best_depth": 4,
+          "best_lr": 0.1,
+          "fold_acc": 0.3333333333333333
         },
         {
           "fold": 3,
           "test_skaters": [
+            "player_b",
             "sean_malto",
-            "shane_oneill",
-            "luan_oliveira",
-            "chris_cole"
+            "cody_cepeda",
+            "ishod_wair"
           ],
-          "n_test_samples": 15,
-          "best_depth": 3,
-          "best_lr": 0.05,
-          "fold_acc": 0.2
+          "n_test_samples": 21,
+          "best_depth": 4,
+          "best_lr": 0.1,
+          "fold_acc": 0.2857142857142857
         }
       ]
     },
     "oracle": {
-      "macro_f1": 0.13133446074622546,
-      "top1_accuracy": 0.1527777777777778,
-      "top2_accuracy": 0.2361111111111111,
+      "macro_f1": 0.1563003663003663,
+      "top1_accuracy": 0.19090909090909092,
+      "top2_accuracy": 0.3181818181818182,
       "per_class_f1": {
-        "360 Flip": 0.47058823529411764,
-        "Backside 180": 0.18181818181818182,
+        "360 Flip": 0.26666666666666666,
+        "Backside 180": 0.13333333333333333,
         "Frontside 180": 0.0,
         "Frontside Shove-it": 0.0,
-        "Heelflip": 0.15384615384615385,
-        "Kickflip": 0.13333333333333333,
-        "Ollie": 0.24242424242424243,
+        "Heelflip": 0.14285714285714285,
+        "Kickflip": 0.16,
+        "Ollie": 0.15384615384615385,
         "Pop Shove-it": 0.0,
-        "Varial / Hardflip": 0.0
+        "Varial / Hardflip": 0.55
       }
+    },
+    "stratified_cv": {
+      "macro_f1": 0.3440304891645888,
+      "accuracy": 0.37272727272727274,
+      "per_class_f1": {
+        "360 Flip": 0.42857142857142855,
+        "Backside 180": 0.5384615384615384,
+        "Frontside 180": 0.46153846153846156,
+        "Frontside Shove-it": 0.07407407407407407,
+        "Heelflip": 0.14285714285714285,
+        "Kickflip": 0.08,
+        "Ollie": 0.2857142857142857,
+        "Pop Shove-it": 0.5517241379310345,
+        "Varial / Hardflip": 0.5333333333333333
+      },
+      "identity_leakage_delta": 0.18773012286422247
     }
   },
   "model_c_stgcn_graph": {
-    "macro_f1": 0.024691358024691357,
-    "accuracy": 0.125,
-    "top2_accuracy": 0.20833333333333334,
+    "macro_f1": 0.01680672268907563,
+    "accuracy": 0.08181818181818182,
+    "top2_accuracy": 0.2909090909090909,
     "num_nodes": 25,
     "sequence_length": 64,
     "raw_rgb_downstream": false
@@ -289,9 +305,9 @@
   "systematic_ablations": {
     "A0_raw_positions": {
       "num_features": 7,
-      "macro_f1": 0.1645341042399866,
-      "weighted_f1": 0.16916373386961622,
-      "accuracy": 0.19444444444444445,
+      "macro_f1": 0.13935012652403958,
+      "weighted_f1": 0.1330399962356484,
+      "accuracy": 0.15454545454545454,
       "feature_list": [
         "pop_board_y",
         "apex_board_y",
@@ -304,9 +320,9 @@
     },
     "A1_pose_only": {
       "num_features": 10,
-      "macro_f1": 0.09095860566448802,
-      "weighted_f1": 0.09327342047930283,
-      "accuracy": 0.125,
+      "macro_f1": 0.11106752020205868,
+      "weighted_f1": 0.10867992722895937,
+      "accuracy": 0.13636363636363635,
       "feature_list": [
         "flight_duration_sec",
         "ascent_ratio",
@@ -322,9 +338,9 @@
     },
     "A2_board_only": {
       "num_features": 18,
-      "macro_f1": 0.15642382309048974,
-      "weighted_f1": 0.1633682675349342,
-      "accuracy": 0.19444444444444445,
+      "macro_f1": 0.15069016166922222,
+      "weighted_f1": 0.14450359676166127,
+      "accuracy": 0.17272727272727273,
       "feature_list": [
         "flight_duration_sec",
         "ascent_ratio",
@@ -348,9 +364,9 @@
     },
     "A3_pose_plus_board": {
       "num_features": 11,
-      "macro_f1": 0.09285159285159285,
-      "weighted_f1": 0.09632381507381507,
-      "accuracy": 0.1111111111111111,
+      "macro_f1": 0.11742998690307768,
+      "weighted_f1": 0.11229348120734971,
+      "accuracy": 0.12727272727272726,
       "feature_list": [
         "flight_duration_sec",
         "ascent_ratio",
@@ -367,9 +383,9 @@
     },
     "A4_coords_plus_velocities": {
       "num_features": 16,
-      "macro_f1": 0.11112406845287433,
-      "weighted_f1": 0.11551003336515503,
-      "accuracy": 0.1388888888888889,
+      "macro_f1": 0.12324113362118186,
+      "weighted_f1": 0.12162862114228151,
+      "accuracy": 0.14545454545454545,
       "feature_list": [
         "flight_duration_sec",
         "ascent_ratio",
@@ -390,10 +406,10 @@
       ]
     },
     "A5_full_engineered_dynamics": {
-      "num_features": 39,
-      "macro_f1": 0.16957813428401664,
-      "weighted_f1": 0.17399732620320854,
-      "accuracy": 0.19444444444444445,
+      "num_features": 45,
+      "macro_f1": 0.1520217209690894,
+      "weighted_f1": 0.16235714285714287,
+      "accuracy": 0.17272727272727273,
       "feature_list": [
         "flight_duration_sec",
         "ascent_ratio",
@@ -406,6 +422,12 @@
         "omega_peak",
         "omega_mean",
         "canonical_omega_mean",
+        "skater_yaw_swap",
+        "delta_feet_dx",
+        "min_norm_length",
+        "board_length_std",
+        "board_yaw_swap",
+        "flip_yaw_product",
         "flip_cycle_count",
         "min_aspect",
         "aspect_std",
@@ -438,23 +460,23 @@
     }
   },
   "latency_profiling": {
-    "inference_latency_per_clip_ms": 0.5080560082569718,
-    "ms_per_frame": 0.003387040055046479,
-    "real_time_factor_rtf": 0.00020322240330278873,
+    "inference_latency_per_clip_ms": 0.8625599998049438,
+    "ms_per_frame": 0.005750399998699625,
+    "real_time_factor_rtf": 0.00034502399992197754,
     "hardware": "CPU (x86_64) Single-Threaded"
   },
   "qc_gates": {
-    "end_to_end_macro_f1": 0.13133446074622546,
+    "end_to_end_macro_f1": 0.1563003663003663,
     "gate_end_to_end_f1_target": 0.82,
     "min_class_f1": 0.0,
     "gate_min_class_f1_target": 0.7,
-    "top2_accuracy": 0.2361111111111111,
+    "top2_accuracy": 0.3181818181818182,
     "gate_top2_target": 0.92,
-    "bail_f1": 0.9577464788732394,
+    "bail_f1": 0.925531914893617,
     "gate_bail_f1_target": 0.8,
-    "bail_fpr": 0.0,
+    "bail_fpr": 0.05434782608695652,
     "gate_bail_fpr_target": 0.08,
-    "pipeline_rtf": 0.00020322240330278873,
+    "pipeline_rtf": 0.00034502399992197754,
     "gate_rtf_target": 0.5,
     "gate_3_and_4_passed": false
   }

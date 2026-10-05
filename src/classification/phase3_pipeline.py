@@ -25,6 +25,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
+import xgboost as xgb
 from typing import Dict, Any, List, Tuple
 
 from src.segmentation.phase2_pipeline import Phase2Pipeline
@@ -281,6 +282,28 @@ class Phase3Engine:
                 'per_class_f1': tree_eval_oracle.per_class_f1
             }
         }
+
+        # Stratified 5-Fold comparison to quantify identity leakage margin
+        from sklearn.model_selection import StratifiedKFold
+        from src.classification.tree_classifier import FEATURE_COLUMNS
+        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        X_mat = df_p_canon[[c for c in FEATURE_COLUMNS if c in df_p_canon.columns]].fillna(0.0)
+        y_codes = pd.Series(y_canon).map({c: i for i, c in enumerate(tree_eval_e2e.classes)}).values
+        strat_preds = np.zeros(len(df_p_canon), dtype=int)
+        for tr, te in skf.split(X_mat, y_codes):
+            clf = xgb.XGBClassifier(n_estimators=50, max_depth=4, learning_rate=0.08, random_state=42, eval_metric='mlogloss', n_jobs=1)
+            clf.fit(X_mat.iloc[tr], y_codes[tr])
+            strat_preds[te] = clf.predict(X_mat.iloc[te])
+        strat_macro_f1 = float(f1_score(y_codes, strat_preds, average='macro', zero_division=0))
+        strat_acc = float(accuracy_score(y_codes, strat_preds))
+        strat_per_class = {c: float(f1_score(y_codes == i, strat_preds == i, zero_division=0)) for i, c in enumerate(tree_eval_e2e.classes)}
+        model_b_results['stratified_cv'] = {
+            'macro_f1': strat_macro_f1,
+            'accuracy': strat_acc,
+            'per_class_f1': strat_per_class,
+            'identity_leakage_delta': float(strat_macro_f1 - tree_eval_e2e.macro_f1)
+        }
+        print(f"  • Model B Stratified 5-Fold Macro F1: {strat_macro_f1*100:.1f}% | Acc: {strat_acc*100:.1f}% | Leakage Delta: {model_b_results['stratified_cv']['identity_leakage_delta']*100:.1f}%")
         print(f"  • Model B End-to-End Macro F1: {tree_eval_e2e.macro_f1*100:.1f}% | Top-1: {tree_eval_e2e.top1_accuracy*100:.1f}% | Top-2: {tree_eval_e2e.top2_accuracy*100:.1f}%")
         print(f"  • Model B Oracle Macro F1:     {tree_eval_oracle.macro_f1*100:.1f}% | Top-1: {tree_eval_oracle.top1_accuracy*100:.1f}%")
         min_class_f1 = min(tree_eval_e2e.per_class_f1.values()) if len(tree_eval_e2e.per_class_f1) > 0 else 0.0

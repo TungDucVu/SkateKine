@@ -140,7 +140,41 @@ class KinematicFeatureExtractor:
         flight_duration_sec = float((t_land - t_pop) * dt)
         ascent_ratio = float((t_apex - t_pop) / max(1, t_land - t_pop))
 
-        # 7. Board Kinematic Velocity & Acceleration summaries
+        # 7. Skater Body Yaw & Stance Switch Kinematics (Feet Inversion in 180s)
+        # In a 180 (FS 180 or BS 180), the skater rotates body yaw and lands switch.
+        pop_w = df_traj.iloc[max(0, t_pop - 5):min(len(df_traj), t_pop + 5)]
+        land_w = df_traj.iloc[max(0, t_land - 5):min(len(df_traj), t_land + 5)]
+
+        pop_feet_dx = float((pop_w['left_ankle_x'] - pop_w['right_ankle_x']).median()) if 'left_ankle_x' in pop_w else 0.0
+        land_feet_dx = float((land_w['left_ankle_x'] - land_w['right_ankle_x']).median()) if 'left_ankle_x' in land_w else 0.0
+
+        if not np.isnan(pop_feet_dx) and not np.isnan(land_feet_dx) and abs(pop_feet_dx) > 1.0 and abs(land_feet_dx) > 1.0:
+            skater_yaw_swap = 1.0 if (pop_feet_dx * land_feet_dx) < 0 else 0.0
+            delta_feet_dx = float((land_feet_dx - pop_feet_dx) * stance_sign)
+        else:
+            skater_yaw_swap = 0.0
+            delta_feet_dx = 0.0
+
+        # 8. Board Yaw & Foreshortening Trough Dynamics (Shove-it discrimination)
+        lens = flight_df['apparent_length'].dropna() if 'apparent_length' in flight_df else pd.Series([])
+        l_pop = float(lens.iloc[0]) if len(lens) > 0 and lens.iloc[0] > 10.0 else 200.0
+        min_norm_length = float(lens.min() / l_pop) if len(lens) > 0 else 1.0
+        board_length_std = float(lens.std()) if len(lens) > 1 else 0.0
+
+        # Board nose-to-tail inversion
+        pop_b_dx = float((pop_w['board_nose_x'] - pop_w['board_tail_x']).median()) if 'board_nose_x' in pop_w else 0.0
+        land_b_dx = float((land_w['board_nose_x'] - land_w['board_tail_x']).median()) if 'board_nose_x' in land_w else 0.0
+        if not np.isnan(pop_b_dx) and not np.isnan(land_b_dx) and abs(pop_b_dx) > 1.0 and abs(land_b_dx) > 1.0:
+            board_yaw_swap = 1.0 if (pop_b_dx * land_b_dx) < 0 else 0.0
+        else:
+            board_yaw_swap = 0.0
+
+        # 9. Flip-Yaw Composite Interaction (Varial / Hardflip / 360 Flip vs pure flips/shuvs)
+        flip_depth = float(np.clip(1.0 - min_aspect, 0.0, 1.0))
+        yaw_depth = float(np.clip(1.0 - min_norm_length, 0.0, 1.0))
+        flip_yaw_product = float(flip_depth * yaw_depth)
+
+        # 10. Board Kinematic Velocity & Acceleration summaries
         def get_series_stats(col: str) -> Tuple[float, float, float]:
             if col in flight_df:
                 s = flight_df[col].dropna()
@@ -176,6 +210,13 @@ class KinematicFeatureExtractor:
             'omega_peak': omega_peak,
             'omega_mean': omega_mean,
             'canonical_omega_mean': canonical_omega_mean,
+            # Rotational axis & yaw discrimination [Phase 3.5]
+            'skater_yaw_swap': skater_yaw_swap,
+            'delta_feet_dx': delta_feet_dx,
+            'min_norm_length': min_norm_length,
+            'board_length_std': board_length_std,
+            'board_yaw_swap': board_yaw_swap,
+            'flip_yaw_product': flip_yaw_product,
             # Aspect & Flip dynamics [P3-A3]
             'flip_cycle_count': flip_cycle_count,
             'min_aspect': min_aspect,

@@ -73,17 +73,22 @@ class PostImpactBailGatekeeper:
 
         foot_dist_mean = 0.0
         foot_dist_frac = 0.3
+        max_foot_frac = 0.3
         if 'left_ankle_board_local_y' in post_df and 'right_ankle_board_local_y' in post_df:
             left_d = np.sqrt(post_df['left_ankle_board_local_x']**2 + post_df['left_ankle_board_local_y']**2)
             right_d = np.sqrt(post_df['right_ankle_board_local_x']**2 + post_df['right_ankle_board_local_y']**2)
             mean_dist = (left_d + right_d) / 2.0
+            max_dist = np.maximum(left_d, right_d)
             foot_dist_mean = float(mean_dist.mean())
             foot_dist_frac = float(foot_dist_mean / board_len)
+            max_foot_frac = float(max_dist.mean() / board_len)
         else:
             foot_dist_frac = 0.3
+            max_foot_frac = 0.3
 
-        # Normalized foot proximity score: 1.0 if feet remain close (< 0.55 board lengths), drops to 0 above 1.0
-        foot_proximity_score = float(np.clip(1.0 - (foot_dist_frac / 0.85), 0.0, 1.0))
+        # Normalized foot proximity score: combines mean and single-foot maximum separation
+        combined_dist_frac = 0.5 * foot_dist_frac + 0.5 * max_foot_frac
+        foot_proximity_score = float(np.clip(1.0 - (combined_dist_frac / 0.70), 0.0, 1.0))
 
         # 2. Skater Center-of-Mass vs. Board Velocity Coherence
         vel_coherence_score = 1.0
