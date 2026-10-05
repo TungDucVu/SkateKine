@@ -33,7 +33,7 @@ from src.classification.dataset_audit import CANONICAL_9_CLASSES
 from src.classification.feature_extractor import KinematicFeatureExtractor
 from src.classification.bail_gatekeeper import PostImpactBailGatekeeper
 from src.classification.rule_classifier import CalibratedRuleClassifier
-from src.classification.tree_classifier import SkateboardTreeClassifier
+from src.classification.tree_classifier import SkateboardTreeClassifier, HierarchicalKinematicClassifier
 from src.classification.graph_classifier import SkateSTGCN, CompactSTGCN
 from src.classification.ablation_runner import SystematicAblationRunner
 
@@ -54,6 +54,7 @@ class Phase3Engine:
         self.bail_gatekeeper = PostImpactBailGatekeeper()
         self.rule_classifier = CalibratedRuleClassifier()
         self.tree_classifier = SkateboardTreeClassifier()
+        self.hierarchical_classifier = HierarchicalKinematicClassifier()
         self.ablation_runner = SystematicAblationRunner()
 
         # Load GT events if available
@@ -320,7 +321,16 @@ class Phase3Engine:
             use_class_weighting=True
         )
 
-        # 4c. Oracle Model B (Upper Bound)
+        # 4c. Hierarchical Kinematic Factorized Classifier (Skateboarding Kinematic Dataset Factorization)
+        print("\n[Step 3.5.2] Evaluating Model B2: Hierarchical Kinematic Classifier (Kinematic Dataset Factorization)...")
+        hierarchical_eval = self.hierarchical_classifier.fit_and_evaluate_nested_cv(
+            X_df=df_p_canon,
+            y=y_canon,
+            groups=skaters,
+            n_outer_splits=4
+        )
+
+        # 4d. Oracle Model B (Upper Bound)
         tree_clf_oracle = SkateboardTreeClassifier()
         tree_eval_oracle = tree_clf_oracle.fit_and_evaluate_nested_cv(
             X_df=df_o_canon,
@@ -331,7 +341,7 @@ class Phase3Engine:
             use_class_weighting=False
         )
 
-        # 4d. Stratified 5-Fold Diagnostic (Quantifying Skater-Overlap / Confounding Margin)
+        # 4e. Stratified 5-Fold Diagnostic (Quantifying Skater-Overlap / Confounding Margin)
         from sklearn.model_selection import StratifiedKFold
         from src.classification.tree_classifier import FEATURE_COLUMNS
         skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -372,6 +382,18 @@ class Phase3Engine:
                 'confusion_matrix': tree_eval_weighted.confusion_matrix,
                 'classes': tree_eval_weighted.classes
             },
+            'hierarchical_kinematic': {
+                'macro_f1': hierarchical_eval.macro_f1,
+                'weighted_f1': hierarchical_eval.weighted_f1,
+                'top1_accuracy': hierarchical_eval.top1_accuracy,
+                'top2_accuracy': hierarchical_eval.top2_accuracy,
+                'per_class_f1': hierarchical_eval.per_class_f1,
+                'per_class_precision': hierarchical_eval.per_class_precision,
+                'per_class_recall': hierarchical_eval.per_class_recall,
+                'confusion_matrix': hierarchical_eval.confusion_matrix,
+                'classes': hierarchical_eval.classes,
+                'nested_cv_results': hierarchical_eval.nested_cv_results
+            },
             'weighting_ablation_delta': {
                 'macro_f1_delta': float(tree_eval_weighted.macro_f1 - tree_eval_unweighted.macro_f1),
                 'top1_delta': float(tree_eval_weighted.top1_accuracy - tree_eval_unweighted.top1_accuracy),
@@ -394,10 +416,11 @@ class Phase3Engine:
                 'skater_overlap_confounding_delta': skater_confounding_delta
             }
         }
-        print(f"  • Unweighted XGBoost Macro F1:     {tree_eval_unweighted.macro_f1*100:.2f}% | Top-1: {tree_eval_unweighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_unweighted.top2_accuracy*100:.2f}%")
-        print(f"  • Class-Weighted XGBoost Macro F1: {tree_eval_weighted.macro_f1*100:.2f}% | Top-1: {tree_eval_weighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_weighted.top2_accuracy*100:.2f}% (Top-2 Delta: {model_b_results['weighting_ablation_delta']['top2_delta']*100:+.2f}%)")
-        print(f"  • Stratified 5-Fold Macro F1:      {strat_macro_f1*100:.2f}% | Acc: {strat_acc*100:.2f}% | Skater-Overlap Confounding Delta: {skater_confounding_delta*100:+.2f}%")
-        print(f"  • Model B Oracle Macro F1:         {tree_eval_oracle.macro_f1*100:.2f}% | Top-1: {tree_eval_oracle.top1_accuracy*100:.2f}%")
+        print(f"  • Unweighted XGBoost Macro F1:        {tree_eval_unweighted.macro_f1*100:.2f}% | Top-1: {tree_eval_unweighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_unweighted.top2_accuracy*100:.2f}%")
+        print(f"  • Class-Weighted XGBoost Macro F1:    {tree_eval_weighted.macro_f1*100:.2f}% | Top-1: {tree_eval_weighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_weighted.top2_accuracy*100:.2f}% (Top-2 Delta: {model_b_results['weighting_ablation_delta']['top2_delta']*100:+.2f}%)")
+        print(f"  • Hierarchical Kinematic Macro F1:    {hierarchical_eval.macro_f1*100:.2f}% | Top-1: {hierarchical_eval.top1_accuracy*100:.2f}% | Top-2: {hierarchical_eval.top2_accuracy*100:.2f}% (Macro F1 Lift: {(hierarchical_eval.macro_f1 - tree_eval_unweighted.macro_f1)*100:+.2f}%)")
+        print(f"  • Stratified 5-Fold Macro F1:         {strat_macro_f1*100:.2f}% | Acc: {strat_acc*100:.2f}% | Skater-Overlap Confounding Delta: {skater_confounding_delta*100:+.2f}%")
+        print(f"  • Model B Oracle Macro F1:            {tree_eval_oracle.macro_f1*100:.2f}% | Top-1: {tree_eval_oracle.top1_accuracy*100:.2f}%")
 
         # 5. Model C: ST-GCN Audit & Evaluation [Step 3.5.3C]
         print("\n[Step 3.6] Evaluating Model C: Spatio-Temporal Graph ConvNet (ST-GCN Audit)...")
@@ -534,6 +557,9 @@ class Phase3Engine:
                     'passed': gate_3_passed,
                     'unweighted_macro_f1': tree_eval_unweighted.macro_f1,
                     'class_weighted_macro_f1': tree_eval_weighted.macro_f1,
+                    'hierarchical_macro_f1': hierarchical_eval.macro_f1,
+                    'hierarchical_top1_accuracy': hierarchical_eval.top1_accuracy,
+                    'hierarchical_top2_accuracy': hierarchical_eval.top2_accuracy,
                     'target_macro_f1': 0.82,
                     'min_class_f1': min_class_f1_unweighted,
                     'target_min_class_f1': 0.70,

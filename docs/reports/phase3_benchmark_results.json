@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-10-05T22:45:36Z",
-  "execution_time_sec": 30.28122615814209,
+  "timestamp": "2026-10-05T23:11:41Z",
+  "execution_time_sec": 30.00252342224121,
   "dataset_universe": {
     "total_manifest_clips": 1035,
     "tracking_eligible_canonical_candidates": 688,
@@ -185,6 +185,9 @@
       "passed": false,
       "unweighted_macro_f1": 0.1688112178308257,
       "class_weighted_macro_f1": 0.17646220881514998,
+      "hierarchical_macro_f1": 0.2803515701787362,
+      "hierarchical_top1_accuracy": 0.3181818181818182,
+      "hierarchical_top2_accuracy": 0.5181818181818182,
       "target_macro_f1": 0.82,
       "min_class_f1": 0.0,
       "target_min_class_f1": 0.7,
@@ -203,7 +206,7 @@
     },
     "rtf_latency_gate": {
       "status": "PASS",
-      "pipeline_rtf": 0.00019478320004418493,
+      "pipeline_rtf": 0.00017240240005776287,
       "target_rtf": 0.5
     }
   },
@@ -613,6 +616,201 @@
         "Varial / Hardflip"
       ]
     },
+    "hierarchical_kinematic": {
+      "macro_f1": 0.2803515701787362,
+      "weighted_f1": 0.2915220866524098,
+      "top1_accuracy": 0.3181818181818182,
+      "top2_accuracy": 0.5181818181818182,
+      "per_class_f1": {
+        "360 Flip": 0.5,
+        "Backside 180": 0.43478260869565216,
+        "Frontside 180": 0.2857142857142857,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.21052631578947367,
+        "Kickflip": 0.3333333333333333,
+        "Ollie": 0.2222222222222222,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.5365853658536586
+      },
+      "per_class_precision": {
+        "360 Flip": 0.5714285714285714,
+        "Backside 180": 0.5,
+        "Frontside 180": 0.375,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.2,
+        "Kickflip": 0.2608695652173913,
+        "Ollie": 0.14285714285714285,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.5
+      },
+      "per_class_recall": {
+        "360 Flip": 0.4444444444444444,
+        "Backside 180": 0.38461538461538464,
+        "Frontside 180": 0.23076923076923078,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.2222222222222222,
+        "Kickflip": 0.46153846153846156,
+        "Ollie": 0.5,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.5789473684210527
+      },
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0,
+          0,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          5,
+          3,
+          0,
+          1,
+          0,
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          3,
+          0,
+          0,
+          2,
+          3,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          1,
+          2,
+          5,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          2,
+          6,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          2,
+          1,
+          4,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          9,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          0,
+          6,
+          0,
+          0,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ],
+      "nested_cv_results": [
+        {
+          "fold": 0,
+          "test_skaters": [
+            "player_a"
+          ],
+          "n_test_samples": 46,
+          "fold_acc": 0.2391304347826087
+        },
+        {
+          "fold": 1,
+          "test_skaters": [
+            "sewa_kroetkov",
+            "luan_oliveira",
+            "chris_cole",
+            "pj_ladd",
+            "torey_pudwill",
+            "tom_fyock"
+          ],
+          "n_test_samples": 22,
+          "fold_acc": 0.22727272727272727
+        },
+        {
+          "fold": 2,
+          "test_skaters": [
+            "jack_colbourn",
+            "chris_joslin",
+            "shane_oneill"
+          ],
+          "n_test_samples": 21,
+          "fold_acc": 0.47619047619047616
+        },
+        {
+          "fold": 3,
+          "test_skaters": [
+            "player_b",
+            "sean_malto",
+            "cody_cepeda",
+            "ishod_wair"
+          ],
+          "n_test_samples": 21,
+          "fold_acc": 0.42857142857142855
+        }
+      ]
+    },
     "weighting_ablation_delta": {
       "macro_f1_delta": 0.007650990984324285,
       "top1_delta": 0.0,
@@ -664,9 +862,9 @@
   },
   "model_c_stgcn_graph": {
     "audited_compact_stgcn": {
-      "macro_f1": 0.09198782590595456,
-      "top1_accuracy": 0.12727272727272726,
-      "top2_accuracy": 0.2818181818181818,
+      "macro_f1": 0.0781245590147866,
+      "top1_accuracy": 0.11818181818181818,
+      "top2_accuracy": 0.2727272727272727,
       "evaluation_protocol": "Nested GroupKFold by skater_id (4 splits)",
       "nodes": 6,
       "node_labels": [
@@ -685,7 +883,7 @@
           "test_skaters": [
             "player_a"
           ],
-          "accuracy": 0.10869565217391304
+          "accuracy": 0.08695652173913043
         },
         {
           "fold": 1,
@@ -719,7 +917,7 @@
           "accuracy": 0.14285714285714285
         }
       ],
-      "findings": "ST-GCN achieves 9.20% F1 with drop-edge & torso normalization (reaching up to 20.8% accuracy on unseen pro skater holdouts), but remains severely sample-starved at N=110 attempts."
+      "findings": "ST-GCN achieves 7.81% F1 with drop-edge & torso normalization (reaching up to 20.8% accuracy on unseen pro skater holdouts), but remains severely sample-starved at N=110 attempts."
     },
     "zero_raw_rgb_downstream": true
   },
@@ -881,9 +1079,9 @@
     }
   },
   "latency_profiling": {
-    "inference_latency_per_clip_ms": 0.4869580001104623,
-    "ms_per_frame": 0.003246386667403082,
-    "real_time_factor_rtf": 0.00019478320004418493,
+    "inference_latency_per_clip_ms": 0.43100600014440715,
+    "ms_per_frame": 0.0028733733342960477,
+    "real_time_factor_rtf": 0.00017240240005776287,
     "hardware": "CPU (x86_64) Single-Threaded"
   }
 }

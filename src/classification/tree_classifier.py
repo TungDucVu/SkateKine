@@ -271,3 +271,319 @@ class SkateboardTreeClassifier:
         preds = np.argmax(probs, axis=1)
         pred_labels = [self.inv_class_mapping[p] for p in preds]
         return pred_labels, probs
+
+
+class HierarchicalKinematicClassifier:
+    """
+    Model B2: Hierarchical Kinematic Factorized Classifier based on Skateboarding_Kinematic_Dataset.csv.
+    Decomposes the flat 9-class trick categorization into a physically motivated multi-stage hierarchy:
+      Stage 1: Flip Roll Detector (Flip vs. Flat)
+      Stage 2A: Body 180 Detector (for Flat tricks: 180 vs Straight Pop)
+        - 180 Specialist: Frontside 180 vs Backside 180
+        - Straight Specialist: Ollie vs Pop Shove-it vs Frontside Shove-it
+      Stage 2B: Flip Sub-Tree Specialist (Kickflip, Heelflip, Varial / Hardflip, 360 Flip)
+    Eliminates cross-family confusion and resolves the 'Ollie Black Hole' where non-flipping tricks
+    collapse into Ollie predictions under unseen-skater holdouts.
+    """
+
+    def __init__(self, seed: int = 42):
+        self.seed = seed
+        self.classes_ = []
+        self.clf_flip = None
+        self.clf_fsub = None
+        self.clf_b180 = None
+        self.clf_180 = None
+        self.clf_str = None
+        self.le_f = None
+        self.le_180 = None
+        self.le_str = None
+
+    def fit_and_evaluate_nested_cv(
+        self,
+        X_df: pd.DataFrame,
+        y: pd.Series,
+        groups: pd.Series,
+        n_outer_splits: int = 4
+    ) -> TreeClassifierEvaluation:
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.utils.class_weight import compute_sample_weight
+
+        self.classes_ = sorted(y.unique().tolist())
+        feat_cols = [c for c in FEATURE_COLUMNS if c in X_df.columns]
+        X = X_df[feat_cols].fillna(0.0).values
+        y_vals = y.values
+
+        is_flip_all = y.isin(['Kickflip', 'Heelflip', 'Varial / Hardflip', '360 Flip']).astype(int).values
+        is_body180_all = y.isin(['Frontside 180', 'Backside 180']).astype(int).values
+
+        unique_groups = groups.unique()
+        actual_splits = min(n_outer_splits, len(unique_groups))
+        outer_gkf = GroupKFold(n_splits=actual_splits)
+
+        all_y_true = []
+        all_y_pred = []
+        all_y_probs = []
+        fold_summaries = []
+
+        directional_cols = [
+            'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
+            'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean'
+        ]
+        dir_indices = [feat_cols.index(c) for c in directional_cols if c in feat_cols]
+
+        def augment_mirror(X_data, y_data):
+            X_m = X_data.copy()
+            for idx in dir_indices:
+                X_m[:, idx] *= -1.0
+            return np.vstack([X_data, X_m]), np.concatenate([y_data, y_data])
+
+        for fold_idx, (train_idx, test_idx) in enumerate(outer_gkf.split(X, y_vals, groups=groups)):
+            test_skaters = groups.iloc[test_idx].unique().tolist()
+
+            # 1. Train Stage 1: Flip vs. Flat Detector
+            X_f_tr, y_f_tr = augment_mirror(X[train_idx], is_flip_all[train_idx])
+            w_flip = compute_sample_weight('balanced', y_f_tr)
+            clf_flip = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+            clf_flip.fit(X_f_tr, y_f_tr, sample_weight=w_flip)
+            p_flip_test = clf_flip.predict(X[test_idx])
+            prob_flip_test = clf_flip.predict_proba(X[test_idx])[:, 1]
+
+            # 2. Train Stage 2B: Flip Sub-Tree Specialist
+            flip_tr_indices = [i for i in train_idx if is_flip_all[i] == 1]
+            le_f = LabelEncoder()
+            y_f_sub_tr = le_f.fit_transform(y_vals[flip_tr_indices])
+            X_fsub_tr, y_fsub_tr = augment_mirror(X[flip_tr_indices], y_f_sub_tr)
+            w_fsub = compute_sample_weight('balanced', y_fsub_tr)
+            clf_fsub = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+            clf_fsub.fit(X_fsub_tr, y_fsub_tr, sample_weight=w_fsub)
+
+            # 3. Train Stage 2A: Body 180 Detector (on non-flip tricks)
+            flat_tr_indices = [i for i in train_idx if is_flip_all[i] == 0]
+            X_b180_tr, y_b180_tr = augment_mirror(X[flat_tr_indices], is_body180_all[flat_tr_indices])
+            w_b180 = compute_sample_weight('balanced', y_b180_tr)
+            clf_b180 = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+            clf_b180.fit(X_b180_tr, y_b180_tr, sample_weight=w_b180)
+            p_b180_test = clf_b180.predict(X[test_idx])
+
+            # 3A. Train 180 Specialist (FS 180 vs BS 180)
+            b180_tr_indices = [i for i in flat_tr_indices if is_body180_all[i] == 1]
+            le_180 = LabelEncoder()
+            y_180_sub_tr = le_180.fit_transform(y_vals[b180_tr_indices])
+            X_180_tr, y_180_tr = augment_mirror(X[b180_tr_indices], y_180_sub_tr)
+            w_180 = compute_sample_weight('balanced', y_180_tr)
+            clf_180 = xgb.XGBClassifier(n_estimators=35, max_depth=2, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+            clf_180.fit(X_180_tr, y_180_tr, sample_weight=w_180)
+
+            # 3B. Train Straight Flat Specialist (Ollie vs Pop Shove-it vs FS Shove-it)
+            straight_tr_indices = [i for i in flat_tr_indices if is_body180_all[i] == 0]
+            le_str = LabelEncoder()
+            y_str_sub_tr = le_str.fit_transform(y_vals[straight_tr_indices])
+            X_str_tr, y_str_tr = augment_mirror(X[straight_tr_indices], y_str_sub_tr)
+            w_str = compute_sample_weight('balanced', y_str_tr)
+            clf_str = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+            clf_str.fit(X_str_tr, y_str_tr, sample_weight=w_str)
+
+            # Predict on outer test fold
+            fold_preds = []
+            fold_probs = np.zeros((len(test_idx), len(self.classes_)))
+
+            for i_local, i_global in enumerate(test_idx):
+                x_sample = X[i_global:i_global+1]
+                p_flip = p_flip_test[i_local]
+                p_b180 = p_b180_test[i_local]
+
+                if p_flip == 1:
+                    probs_local = clf_fsub.predict_proba(x_sample)[0]
+                    for sub_idx, glob_name in enumerate(le_f.classes_):
+                        glob_idx = self.classes_.index(glob_name)
+                        fold_probs[i_local, glob_idx] = probs_local[sub_idx] * prob_flip_test[i_local]
+                    pred_class_idx = np.argmax(probs_local)
+                    pred_name = le_f.inverse_transform([pred_class_idx])[0]
+                else:
+                    if p_b180 == 1:
+                        probs_local = clf_180.predict_proba(x_sample)[0]
+                        for sub_idx, glob_name in enumerate(le_180.classes_):
+                            glob_idx = self.classes_.index(glob_name)
+                            fold_probs[i_local, glob_idx] = probs_local[sub_idx] * (1.0 - prob_flip_test[i_local])
+                        pred_class_idx = np.argmax(probs_local)
+                        pred_name = le_180.inverse_transform([pred_class_idx])[0]
+                    else:
+                        probs_local = clf_str.predict_proba(x_sample)[0]
+                        for sub_idx, glob_name in enumerate(le_str.classes_):
+                            glob_idx = self.classes_.index(glob_name)
+                            fold_probs[i_local, glob_idx] = probs_local[sub_idx] * (1.0 - prob_flip_test[i_local])
+                        pred_class_idx = np.argmax(probs_local)
+                        pred_name = le_str.inverse_transform([pred_class_idx])[0]
+
+                fold_preds.append(pred_name)
+
+            all_y_true.extend(y_vals[test_idx].tolist())
+            all_y_pred.extend(fold_preds)
+            all_y_probs.extend(fold_probs.tolist())
+
+            fold_acc = float(accuracy_score(y_vals[test_idx], fold_preds))
+            fold_summaries.append({
+                'fold': fold_idx,
+                'test_skaters': test_skaters,
+                'n_test_samples': len(test_idx),
+                'fold_acc': fold_acc
+            })
+
+        # Calculate final evaluation metrics
+        all_y_true_arr = np.array(all_y_true)
+        all_y_pred_arr = np.array(all_y_pred)
+        all_y_probs_arr = np.array(all_y_probs)
+
+        macro_f1 = float(f1_score(all_y_true_arr, all_y_pred_arr, average='macro', zero_division=0))
+        weighted_f1 = float(f1_score(all_y_true_arr, all_y_pred_arr, average='weighted', zero_division=0))
+        top1_acc = float(accuracy_score(all_y_true_arr, all_y_pred_arr))
+
+        top2_count = 0
+        for i, true_label in enumerate(all_y_true_arr):
+            top2_indices = np.argsort(all_y_probs_arr[i])[-2:]
+            top2_names = [self.classes_[idx] for idx in top2_indices]
+            if true_label in top2_names:
+                top2_count += 1
+        top2_acc = float(top2_count / max(1, len(all_y_true_arr)))
+
+        per_class_f1 = {}
+        per_class_prec = {}
+        per_class_rec = {}
+        for cname in self.classes_:
+            c_mask_true = (all_y_true_arr == cname)
+            c_mask_pred = (all_y_pred_arr == cname)
+            per_class_f1[cname] = float(f1_score(c_mask_true, c_mask_pred, zero_division=0))
+            per_class_prec[cname] = float(precision_score(c_mask_true, c_mask_pred, zero_division=0))
+            per_class_rec[cname] = float(recall_score(c_mask_true, c_mask_pred, zero_division=0))
+
+        cm = confusion_matrix(all_y_true_arr, all_y_pred_arr, labels=self.classes_).tolist()
+
+        # Fit on entire dataset so the classifier can be used for downstream predictions
+        self.fit(X_df, y)
+
+        return TreeClassifierEvaluation(
+            macro_f1=macro_f1,
+            weighted_f1=weighted_f1,
+            top1_accuracy=top1_acc,
+            top2_accuracy=top2_acc,
+            per_class_f1=per_class_f1,
+            per_class_precision=per_class_prec,
+            per_class_recall=per_class_rec,
+            confusion_matrix=cm,
+            classes=self.classes_,
+            shap_importance={},
+            nested_cv_results=fold_summaries
+        )
+
+    def fit(self, X_df: pd.DataFrame, y: pd.Series):
+        """Fits all stages of the hierarchical model on the full dataset."""
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.utils.class_weight import compute_sample_weight
+
+        self.classes_ = sorted(y.unique().tolist())
+        self.feat_cols = [c for c in FEATURE_COLUMNS if c in X_df.columns]
+        X = X_df[self.feat_cols].fillna(0.0).values
+        y_vals = y.values
+
+        is_flip_all = y.isin(['Kickflip', 'Heelflip', 'Varial / Hardflip', '360 Flip']).astype(int).values
+        is_body180_all = y.isin(['Frontside 180', 'Backside 180']).astype(int).values
+
+        directional_cols = [
+            'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
+            'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean'
+        ]
+        self.dir_indices = [self.feat_cols.index(c) for c in directional_cols if c in self.feat_cols]
+
+        def augment_mirror(X_data, y_data):
+            X_m = X_data.copy()
+            for idx in self.dir_indices:
+                X_m[:, idx] *= -1.0
+            return np.vstack([X_data, X_m]), np.concatenate([y_data, y_data])
+
+        # 1. Flip vs Flat
+        X_f_tr, y_f_tr = augment_mirror(X, is_flip_all)
+        w_flip = compute_sample_weight('balanced', y_f_tr)
+        self.clf_flip = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+        self.clf_flip.fit(X_f_tr, y_f_tr, sample_weight=w_flip)
+
+        # 2. Flip Sub-Tree Specialist
+        flip_indices = [i for i in range(len(y_vals)) if is_flip_all[i] == 1]
+        self.le_f = LabelEncoder()
+        y_f_sub = self.le_f.fit_transform(y_vals[flip_indices])
+        X_fsub, y_fsub = augment_mirror(X[flip_indices], y_f_sub)
+        w_fsub = compute_sample_weight('balanced', y_fsub)
+        self.clf_fsub = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+        self.clf_fsub.fit(X_fsub, y_fsub, sample_weight=w_fsub)
+
+        # 3. Body 180 Detector (Flat tricks)
+        flat_indices = [i for i in range(len(y_vals)) if is_flip_all[i] == 0]
+        X_b180, y_b180 = augment_mirror(X[flat_indices], is_body180_all[flat_indices])
+        w_b180 = compute_sample_weight('balanced', y_b180)
+        self.clf_b180 = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+        self.clf_b180.fit(X_b180, y_b180, sample_weight=w_b180)
+
+        # 3A. 180 Specialist
+        b180_indices = [i for i in flat_indices if is_body180_all[i] == 1]
+        self.le_180 = LabelEncoder()
+        y_180_sub = self.le_180.fit_transform(y_vals[b180_indices])
+        X_180, y_180 = augment_mirror(X[b180_indices], y_180_sub)
+        w_180 = compute_sample_weight('balanced', y_180)
+        self.clf_180 = xgb.XGBClassifier(n_estimators=35, max_depth=2, learning_rate=0.05, random_state=self.seed, eval_metric='logloss')
+        self.clf_180.fit(X_180, y_180, sample_weight=w_180)
+
+        # 3B. Straight Specialist
+        straight_indices = [i for i in flat_indices if is_body180_all[i] == 0]
+        self.le_str = LabelEncoder()
+        y_str_sub = self.le_str.fit_transform(y_vals[straight_indices])
+        X_str, y_str = augment_mirror(X[straight_indices], y_str_sub)
+        w_str = compute_sample_weight('balanced', y_str)
+        self.clf_str = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+        self.clf_str.fit(X_str, y_str, sample_weight=w_str)
+
+        return self
+
+    def predict(self, X_df: pd.DataFrame) -> Tuple[List[str], np.ndarray]:
+        """Predicts trick classes and probability distributions using the trained hierarchy."""
+        if self.clf_flip is None:
+            raise ValueError("HierarchicalKinematicClassifier must be fitted before calling predict.")
+        feat_cols = [c for c in FEATURE_COLUMNS if c in X_df.columns]
+        X = X_df[feat_cols].fillna(0.0).values
+        n_samples = len(X)
+
+        p_flip = self.clf_flip.predict(X)
+        prob_flip = self.clf_flip.predict_proba(X)[:, 1]
+        p_b180 = self.clf_b180.predict(X)
+
+        preds = []
+        probs = np.zeros((n_samples, len(self.classes_)))
+
+        for i in range(n_samples):
+            x_sample = X[i:i+1]
+            if p_flip[i] == 1:
+                probs_local = self.clf_fsub.predict_proba(x_sample)[0]
+                for sub_idx, glob_name in enumerate(self.le_f.classes_):
+                    glob_idx = self.classes_.index(glob_name)
+                    probs[i, glob_idx] = probs_local[sub_idx] * prob_flip[i]
+                pred_class_idx = np.argmax(probs_local)
+                pred_name = self.le_f.inverse_transform([pred_class_idx])[0]
+            else:
+                if p_b180[i] == 1:
+                    probs_local = self.clf_180.predict_proba(x_sample)[0]
+                    for sub_idx, glob_name in enumerate(self.le_180.classes_):
+                        glob_idx = self.classes_.index(glob_name)
+                        probs[i, glob_idx] = probs_local[sub_idx] * (1.0 - prob_flip[i])
+                    pred_class_idx = np.argmax(probs_local)
+                    pred_name = self.le_180.inverse_transform([pred_class_idx])[0]
+                else:
+                    probs_local = self.clf_str.predict_proba(x_sample)[0]
+                    for sub_idx, glob_name in enumerate(self.le_str.classes_):
+                        glob_idx = self.classes_.index(glob_name)
+                        probs[i, glob_idx] = probs_local[sub_idx] * (1.0 - prob_flip[i])
+                    pred_class_idx = np.argmax(probs_local)
+                    pred_name = self.le_str.inverse_transform([pred_class_idx])[0]
+            preds.append(pred_name)
+
+        return preds, probs
+
