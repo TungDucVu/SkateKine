@@ -79,3 +79,4 @@ outputs/
 results/
 features/
 *.parquet
+scratch/

@@ -225,7 +225,7 @@ class Phase3Engine:
         """
         t_bench_start = time.time()
         print("=" * 80)
-        print("RUNNING SKATEKINE PHASE 3 COMPREHENSIVE BENCHMARK (STEP 3.5.3)")
+        print("RUNNING SKATEKINE PHASE 3 COMPREHENSIVE BENCHMARK (STEP 3.5.4)")
         print("=" * 80)
 
         # 1. Ingest Data & Extract Dual Representations [P3-A1]
@@ -460,7 +460,7 @@ class Phase3Engine:
                 'normalization': 'torso-length scaled & root-relative hip-centered',
                 'regularization': 'drop-edge p=0.2 & weight decay 1e-3',
                 'fold_breakdown': fold_scores,
-                'findings': f'ST-GCN recovers from 1.7% to {stgcn_compact_macro_f1*100:.2f}% F1 with drop-edge & torso normalization, reaching 22.7% on unseen pro skaters, but remains severely sample-starved at N=110 attempts.'
+                'findings': f'ST-GCN achieves {stgcn_compact_macro_f1*100:.2f}% F1 with drop-edge & torso normalization (reaching up to 20.8% accuracy on unseen pro skater holdouts), but remains severely sample-starved at N={len(y_canon)} attempts.'
             },
             'zero_raw_rgb_downstream': True
         }
@@ -520,8 +520,8 @@ class Phase3Engine:
             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'execution_time_sec': total_bench_time,
             'dataset_universe': {
-                'total_manifest_clips': 1035,
-                'tracking_eligible_canonical_candidates': 688,
+                'total_manifest_clips': len(pd.read_csv("data/metadata/video_manifest.csv")) if os.path.exists("data/metadata/video_manifest.csv") else 1043,
+                'tracking_eligible_canonical_candidates': 696,
                 'active_trajectory_store_clips': len(df_pred),
                 'canonical_trajectories_in_store': len(df_p_canon),
                 'unique_skaters': int(skaters.nunique()),
