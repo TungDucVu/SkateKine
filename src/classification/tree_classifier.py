@@ -72,13 +72,16 @@ class SkateboardTreeClassifier:
         y: pd.Series,
         groups: pd.Series,
         n_outer_splits: int = 4,
-        n_inner_splits: int = 3
+        n_inner_splits: int = 3,
+        use_class_weighting: bool = False
     ) -> TreeClassifierEvaluation:
         """
         Executes Nested GroupKFold validation [P3-A7].
         Outer splits withhold test skaters completely.
         Inner splits tune hyperparameter depth and learning rate.
+        Supports inverse-frequency class weighting: w_c = N / (K * N_c).
         """
+        from sklearn.utils.class_weight import compute_sample_weight
         self.classes_ = sorted(y.unique().tolist())
         self.class_mapping = {c: i for i, c in enumerate(self.classes_)}
         self.inv_class_mapping = {i: c for i, c in enumerate(self.classes_)}
@@ -119,6 +122,7 @@ class SkateboardTreeClassifier:
                         for in_tr, in_val in inner_gkf.split(X_train, y_train, groups=train_groups):
                             le_inner = LabelEncoder()
                             y_in_tr = le_inner.fit_transform(y_train[in_tr])
+                            w_in = compute_sample_weight('balanced', y_in_tr) if use_class_weighting else None
                             clf = xgb.XGBClassifier(
                                 n_estimators=40,
                                 max_depth=depth_cand,
@@ -127,7 +131,7 @@ class SkateboardTreeClassifier:
                                 random_state=self.seed,
                                 n_jobs=1
                             )
-                            clf.fit(X_train[in_tr], y_in_tr)
+                            clf.fit(X_train[in_tr], y_in_tr, sample_weight=w_in)
                             p_val_enc = clf.predict(X_train[in_val])
                             p_val = le_inner.inverse_transform(p_val_enc)
                             inner_scores.append(accuracy_score(y_train[in_val], p_val))
@@ -140,6 +144,7 @@ class SkateboardTreeClassifier:
             # Train final model for this fold using best tuned parameters
             le_outer = LabelEncoder()
             y_tr_enc = le_outer.fit_transform(y_train)
+            w_tr = compute_sample_weight('balanced', y_tr_enc) if use_class_weighting else None
 
             model = xgb.XGBClassifier(
                 n_estimators=self.n_estimators,
@@ -149,7 +154,7 @@ class SkateboardTreeClassifier:
                 random_state=self.seed,
                 n_jobs=1
             )
-            model.fit(X_train, y_tr_enc)
+            model.fit(X_train, y_tr_enc, sample_weight=w_tr)
 
             # Predict on outer test fold and map to global class distribution
             probs_local = model.predict_proba(X_test)

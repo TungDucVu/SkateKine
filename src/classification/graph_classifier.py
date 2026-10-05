@@ -140,3 +140,81 @@ class SkateSTGCN(nn.Module):
         x = x.view(N, -1)
 
         return self.fc(x)
+
+
+def build_compact_skate_adjacency() -> torch.Tensor:
+    """
+    Constructs normalized 6-node spatial adjacency:
+    0: mid_hip, 1: left_ankle, 2: right_ankle
+    3: board_nose, 4: board_tail, 5: board_centroid
+    """
+    V = 6
+    A = np.eye(V, dtype=np.float32)
+    edges = [
+        (0, 1), (0, 2), (1, 2),         # Body triangle
+        (3, 5), (4, 5), (3, 4),         # Board backbone
+        (1, 4), (1, 5), (2, 3), (2, 5)  # Dynamic foot-board coupling
+    ]
+    for i, j in edges:
+        A[i, j] = 1.0
+        A[j, i] = 1.0
+
+    deg = np.sum(A, axis=1)
+    deg_inv = np.power(deg, -0.5, where=deg > 0)
+    A_norm = deg_inv[:, None] * A * deg_inv[None, :]
+    return torch.from_numpy(A_norm).float()
+
+
+class CompactSTGCN(nn.Module):
+    """
+    Compact regularized ST-GCN with Drop-Edge (p=0.2) and root-relative coords.
+    Prevents catastrophic memorization of camera pan and skater identity.
+    """
+    def __init__(self, in_channels: int = 4, num_classes: int = 9, drop_edge_p: float = 0.2):
+        super().__init__()
+        self.drop_edge_p = drop_edge_p
+        self.register_buffer('A_base', build_compact_skate_adjacency())
+
+        self.bn_in = nn.BatchNorm2d(in_channels)
+        self.gcn1 = nn.Conv2d(in_channels, 32, kernel_size=1)
+        self.tcn1 = nn.Sequential(
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=(7, 1), stride=(2, 1), padding=(3, 0)),
+            nn.BatchNorm2d(32),
+            nn.Dropout(0.2)
+        )
+        self.gcn2 = nn.Conv2d(32, 64, kernel_size=1)
+        self.tcn2 = nn.Sequential(
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=(7, 1), stride=(2, 1), padding=(3, 0)),
+            nn.BatchNorm2d(64),
+            nn.Dropout(0.2)
+        )
+        self.fc = nn.Linear(64, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        N, C, T, V = x.size()
+        x = self.bn_in(x)
+
+        # Drop-edge regularization during training
+        A = self.A_base.clone()
+        if self.training and self.drop_edge_p > 0.0:
+            mask = (torch.rand_like(A) > self.drop_edge_p).float()
+            A = A * mask
+
+        # Block 1
+        x = torch.einsum('nctv,vw->nctw', (x, A))
+        x = self.gcn1(x)
+        x = self.tcn1(x)
+
+        # Block 2
+        x = torch.einsum('nctv,vw->nctw', (x, A))
+        x = self.gcn2(x)
+        x = self.tcn2(x)
+
+        # Global average pool
+        x = F.avg_pool2d(x, x.size()[2:]).view(N, -1)
+        return self.fc(x)
+
