@@ -1,9 +1,9 @@
 # Phase 3 Execution & Quality Control Report: Trick Classification Engine & Post-Impact Land/Bail Verification
 
 **Execution Date:** 2026-10-05  
-**Corpus State:** 78 Parquet Trajectories (72 Canonical 9-Class Attempts across 14 Pro Skaters, 6 Bails, 100% Tracking Stability)  
-**Target Gates:** Gate 3 (Trick Recognition & Generalization) & Gate 4 (Post-Impact Land/Bail Production Verification)  
-**Exit Gate Status:** GATE 4: FULLY CERTIFIED (F1 = 95.8%, FPR = 0.0%) | RECOGNITION BASELINE ESTABLISHED (4.1x F1 GAIN) | PHASE 4 UNLOCKED  
+**Corpus Universe:** 688 Tracking-Eligible Canonical Clips in Manifest | **78 Materialized Parquet Trajectories** (72 Canonical 9-Class Attempts across 14 Pro Skaters + 6 Bails)  
+**Target Gates:** Gate 3 (Trick Recognition & Generalization) & Gate 4 (Post-Impact Land/Bail Verification)  
+**Exit Gate Status:** GATE 3: FAILED (13.13% Macro F1 << 82.0% Target) | GATE 4: PASS (PILOT CERTIFIED / PROVISIONAL) | PHASE 4: PAUSED (PHASE 3.5 RECOVERY MANDATED)  
 
 ---
 
@@ -13,7 +13,9 @@ Phase 3 implements the core action recognition and execution verification intell
 1. **What trick was attempted?** (Multi-class categorization across the 9 primary flatground trick classes).
 2. **Was the attempt landed or bailed?** (Post-impact rollout verification gatekeeper).
 
-Following initial audit diagnostics that exposed severe trajectory store starvation ($N=19$ canonical attempts, with 3 classes initially absent), an automated batch expansion was executed via `src/tracking/batch_processor.py`. This scaled the trajectory store to **78 verified attempts** evenly distributed across all 9 canonical trick classes and **14 distinct professional skaters**, providing the empirical power necessary for statistically valid cross-skater evaluation.
+Following initial audit diagnostics that exposed severe trajectory store starvation ($N=19$ canonical attempts, with 3 classes initially absent), an automated batch expansion was executed via `src/tracking/batch_processor.py`. This scaled the active trajectory store from 19 to **72 canonical materialized trajectories (78 total parquet files)** across **14 distinct professional skaters**, drawn from the broader universe of **688 tracking-eligible canonical clips in the manifest**.
+
+While data expansion drove a **4.1x recovery in XGBoost Macro F1** and established empirical proof of skater-identity confounding, strict cross-skater recognition failed Gate 3 by a wide margin ($13.13\% \ll 82.0\%$). Consequently, **Gate 3 is FAILED**, Gate 4 is **provisionally certified for pilots**, and Phase 4 is **PAUSED** pending execution of **Phase 3.5: Recognition Recovery & Dataset Balancing**.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -22,31 +24,34 @@ Following initial audit diagnostics that exposed severe trajectory store starvat
 │  [1] Architectural & Pipeline Hygiene : 9.5 / 10 (EXEMPLARY)                │
 │      • Zero raw RGB leakage, stance normalization, runtime < 1 ms           │
 │                                                                             │
-│  [2] Gate 4 (Land/Bail Verification) : FULLY CERTIFIED (95.8% F1)           │
-│      • 0.0% False Positive Rate across all 73 clean landed attempts         │
-│      • Tri-state: LANDED / BAILED / UNCERTAIN (Cleanliness decoupled)       │
+│  [2] Gate 4 (Land/Bail Verification) : PASS (PILOT CERTIFIED / PROVISIONAL) │
+│      • Confusion Matrix: [[2, 6], [0, 68]] + 2 Uncertain (78 clips total)   │
+│      • 0.0% False Positive Rate on landed tricks (68/68 clean clips passed) │
+│      • Heavy class imbalance (68 landed vs. 8 bails); 2/8 bails detected    │
 │                                                                             │
-│  [3] Trajectory Store Expansion      : 78 clips (72 Canonical 9-Class)      │
-│      • Class Starvation Resolved     : All 9 classes have >= 7 attempts     │
+│  [3] Trajectory Store Representation : 72 Canonical Trajectories Materialized│
+│      • Universe: 688 eligible clips in manifest vs. 72 active trajectories  │
 │      • Multi-Skater Roster           : 14 Professional Skaters              │
+│      • Skater Sparsity Remains       : Ollie (2 skaters), BS180/PopShov (3) │
 │                                                                             │
-│  [4] Gate 3 (Trick Recognition Engine): 4.1x MACRO F1 RECOVERY GAIN         │
-│      • Model B (Nested GroupKFold)   : Macro F1: 3.2% -> 13.1% | Top-2: 23.6%│
-│      • 360 Flip Recognition          : 47.1% F1 | 50.0% Precision           │
-│      • Ollie Recognition             : 24.2% F1 | 50.0% Recall              │
+│  [4] Gate 3 (Trick Recognition Engine): FAILED (13.13% vs. 82.0% Target)     │
+│      • Model B (Nested GroupKFold)   : Macro F1 = 13.13% | Top-2: 23.61%    │
+│      • 4 Collapsed Classes (0.0% F1) : FS 180, FS Shove-it, Pop Shove, Varial│
+│      • Performing Classes            : 360 Flip (47.1% F1), Ollie (24.2% F1)│
 │                                                                             │
-│  [5] Skater-Confounding Thesis Margin: 17.0% Identity Leakage Quantified    │
+│  [5] Model C (ST-GCN Graph Engine)   : CATASTROPHIC REGRESSION (2.47% F1)   │
+│      • Dropped from 25.1% to 2.47% Macro F1 under skater-disjoint splits    │
+│      • Graph architecture failed to stabilize on expanded multi-skater data │
+│                                                                             │
+│  [6] Skater-Confounding Thesis Margin: 17.0% Identity Leakage Quantified    │
 │      • Stratified 5-Fold (With Skater Overlap) : 30.1% Macro F1 | 36.0% Acc │
 │      • Nested GroupKFold (Strict Unseen Skater): 13.1% Macro F1 | 15.3% Acc │
 │                                                                             │
-│  [6] Ablation Finding Confirmed      : A5 Dynamics Surpasses A0 Positional  │
+│  [7] Ablation Finding Confirmed      : A5 Dynamics Surpasses A0 Positional  │
 │      • A5 (Full Dynamics)            : 17.0% Macro F1 (Highest in study)    │
 │      • A0 (Sparse Positional)        : 16.5% Macro F1                       │
 │                                                                             │
-│  [7] Runtime Latency & Throughput    : 3.39 μs/frame | RTF = 0.00020 [PASSED│
-│      • Single-thread CPU latency     : 0.51 ms/clip (5,000x faster than RT) │
-│                                                                             │
-│  [8] Phase 4 Cleanliness Status      : UNLOCKED AND CERTIFIED FOR EXECUTION │
+│  [8] Phase 4 Cleanliness Status      : PAUSED PENDING PHASE 3.5 RECOVERY    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,30 +60,43 @@ Following initial audit diagnostics that exposed severe trajectory store starvat
 ## 2. Key Research Insights & Empirical Diagnoses
 
 ### 2.1 The Data Starvation Root Cause & Recovery
-The initial failure of Model B ($3.17\%$ Macro F1) during the pilot run was mathematically caused by trajectory store starvation:
+The initial failure of Model B ($3.17\%$ Macro F1) during the pilot run was strongly associated with trajectory store starvation:
 * The initial pilot feature store contained only 19 canonical attempts, and three classes (`Pop Shove-it`, `Frontside Shove-it`, `360 Flip`) had **zero** trajectory representations.
-* Through Step 3.8 batch processing, the trajectory store was systematically expanded to **78 parquet trajectories (72 canonical attempts)**, ensuring every class has 7–9 attempts across multiple skaters.
-* With data starvation resolved, Model B Macro F1 rose **4.1x** from 3.2% to **13.1%**, and specific trick classes reached strong generalization: **360 Flip (47.1% F1, 50.0% precision)** and **Ollie (24.2% F1, 50.0% recall)**.
+* Through Step 3.8 batch processing, the active store was systematically expanded to **78 parquet trajectories (72 canonical attempts, 6 bails)** from the broader universe of **688 tracking-eligible canonical clips in the manifest**, ensuring every class had 7–9 attempts across multiple skaters.
+* With data starvation addressed, Model B Macro F1 rose **4.1x** from 3.2% to **13.13%**, and specific trick classes reached strong generalization: **360 Flip (47.1% F1, 50.0% precision)** and **Ollie (24.2% F1, 50.0% recall)**.
 
 ### 2.2 The Skater-Confounding Discovery (Core Thesis Finding)
 The pre-training audit (`phase3_dataset_audit.json`) uncovered massive structural skew in the raw data:
 * In the full manifest, `Pop Shove-it` (96.4% Player A), `Backside 180` (96.2% Player A), `Frontside 180` (94.6% Player A), and `Ollie` (92.3% Player A) are heavily dominated by a single individual.
-* To quantify the exact degree of skater-identity confounding, Model B was evaluated under two distinct protocols on the exact same 72 clips:
-  1. **Stratified 5-Fold Cross-Validation (Standard Practice in Literature):**
+* To measure the performance lift observed under skater overlap versus strict generalization, Model B was evaluated under two distinct protocols on the exact same 72 clips:
+  1. **Stratified 5-Fold Cross-Validation (Permits Skater Overlap):**
      $$\text{Macro F1} = \mathbf{30.1\%}, \quad \text{Top-1 Accuracy} = \mathbf{36.0\%}$$
   2. **Nested GroupKFold by Skater (SkateKine Anti-Leakage Protocol):**
      $$\text{Macro F1} = \mathbf{13.1\%}, \quad \text{Top-1 Accuracy} = \mathbf{15.3\%}$$
 
 $$\Delta_{\text{leakage}} = \text{Macro F1}_{\text{stratified}} - \text{Macro F1}_{\text{GroupKFold}} = 30.1\% - 13.1\% = \mathbf{17.0\%}$$
 
-This $17.0\%$ performance differential isolates the exact magnitude of skater-identity confounding. It demonstrates that naive random splitting inflates apparent model performance by memorizing skater-specific traits (clothing, stance quirks, shoes) rather than learning invariant kinematic trick dynamics.
+This $17.0\%$ performance differential documents substantial identity-driven inflation. It demonstrates that naive random splitting inflates apparent model performance by memorizing skater-specific traits (clothing, stance quirks, shoes) rather than learning invariant kinematic trick dynamics.
 
 ### 2.3 Diagnostic Confirmation: Oracle vs. End-to-End Invariance
-Both Oracle events (GT timestamps) and End-to-End events (Phase 2 predicted timestamps) produced identical macro F1 scores on GBDT. This confirms that Phase 2 temporal event detection is not the limiting factor in trick recognition.
+Both Oracle events (GT timestamps) and End-to-End events (Phase 2 predicted timestamps) produced identical macro F1 scores on GBDT ($13.13\%$). This confirms that Phase 2 temporal event detection is not the limiting factor in trick recognition.
 
 ### 2.4 The Ablation Progression: Nomenclature Update & Capacity Scaling
 * *Formal Nomenclature Update:* The label "A0 Baseline Raw Positions" is formally amended to **"A0: Sparse Phase-Summary Positional Baseline"**, as it measures discrete keypoints at Pop, Apex, and Land rather than raw continuous temporal streams.
 * *Empirical Finding:* On the small pilot store ($N=19$), A5 collapsed to $0.0\%$ due to over-parameterization. On the expanded store ($N=72$), **A5 (Full Dynamics) emerged as the top-performing feature set ($17.0\%$ Macro F1)**, surpassing A0 ($16.5\%$), confirming that physics-driven features become increasingly dominant as sample size scales.
+
+### 2.5 Critical Finding: ST-GCN Graph Architecture Catastrophic Regression
+While tabular feature engineering (XGBoost) gained 4.1x F1 from expanded multi-skater data, Model C (SkateSTGCN) suffered a catastrophic regression:
+* Macro F1 collapsed from **$25.1\%$** on the pilot down to **$2.47\%$** on the 72-clip store (Top-1 Accuracy: $12.5\%$, Top-2 Accuracy: $20.8\%$).
+* Under strict skater-disjoint splits, the 25-node coordinate graph without adjacency re-calibration or multi-skater graph regularization overfit severely to training topologies, failing completely to generalize to unseen skaters. Remediating graph normalization and training dynamics is an essential mandate for Phase 3.5.
+
+### 2.6 The Zero-F1 Class Collapse Bottleneck
+Despite overall F1 gains, four of the nine canonical classes collapsed entirely ($0.0\%$ F1):
+* **Frontside 180 (0.0% F1, 0.0% Recall):** Confounded with Ollie and Backside 180 due to weak yaw resolution.
+* **Frontside Shove-it (0.0% F1, 0.0% Recall):** Confounded with Pop Shove-it and Kickflip.
+* **Pop Shove-it (0.0% F1, 0.0% Recall):** Subsumed by Ollie predictions.
+* **Varial / Hardflip (0.0% F1, 0.0% Recall):** Fails to disambiguate combined flip + board yaw.
+Resolving these zero-F1 classes requires targeted trajectory processing from the 688 manifest clips and rotational axis feature re-engineering in Phase 3.5.
 
 ---
 
@@ -137,7 +155,7 @@ Following batch expansion via `src/tracking/batch_processor.py`:
 
 ---
 
-## 6. Post-Impact Land/Bail Verification Gate (Gate 4 Certified)
+## 6. Post-Impact Land/Bail Verification Gate (Gate 4 Pilot Certified)
 
 The Post-Impact Land/Bail Verification Gate operates on the post-touchdown interval $[t_{\text{land}}, t_{\text{land}} + 30]$.
 
@@ -152,22 +170,25 @@ The Post-Impact Land/Bail Verification Gate operates on the post-touchdown inter
 
 ### 6.2 Gate 4 Production Verification Results
 
+Across the 78 attempts evaluated in the active store (74 predicted Landed, 2 predicted Bailed, 2 categorized as UNCERTAIN):
+
 ```text
 Confusion Matrix (Landed vs. Bailed):
                     Predicted Bailed    Predicted Landed
-Actual Bailed:             2                    3
-Actual Landed:             0                   73
+Actual Bailed:             2                    6
+Actual Landed:             0                   68
 ```
 
 | Metric | Hard Operational Gate | Empirical Result | Gate Status |
 | :--- | :---: | :---: | :---: |
-| **Bail Verification F1** | $\ge 0.80$ | **$0.958$ (95.8%)** | **FULLY CERTIFIED** |
-| **Bail False Positive Rate (FPR)** | $< 8.0\%$ | **$0.0\%$ (0 clean clips rejected)** | **PASSED** |
-| **Landed Recall** | $\ge 90.0\%$ | **$100.0\%$ (73 / 73 landed attempts)** | **PASSED** |
-| **Precision** | $\ge 80.0\%$ | **$96.1\%$** | **PASSED** |
+| **Landed Verification F1** | $\ge 0.80$ | **$0.958$ (95.8%)** | **PASS (Pilot Certified)** |
+| **Bail False Positive Rate (FPR)** | $< 8.0\%$ | **$0.0\%$ (0/68 clean clips rejected)** | **PASSED** |
+| **Landed Recall** | $\ge 90.0\%$ | **$100.0\%$ (68 / 68 landed attempts)** | **PASSED** |
+| **Landed Precision** | $\ge 80.0\%$ | **$91.9\%$ (68 / 74 predicted landed)** | **PASSED** |
+| **Bail Detection Recall** | $\ge 70.0\%$ | **$25.0\%$ (2 / 8 actual bails detected)** | **PROVISIONAL DEFICIT** |
 
-> [!IMPORTANT]
-> Gate 4 is **officially certified**. Across 73 verified landed attempts, the gate achieved an absolute $0.0\%$ False Positive Rate, guaranteeing that no clean attempt is rejected prior to Phase 4 cleanliness scoring.
+> [!WARNING]
+> **Pilot Certification Limitation:** While Gate 4 achieved an absolute $0.0\%$ False Positive Rate across 68 landed attempts (no clean clips rejected), 6 of 8 actual bails were missed as landed ($25.0\%$ bail recall). The high $95.8\%$ F1 score is predominantly weighted by the 68:8 class imbalance in the active store. Consequently, Gate 4 is **provisionally certified for pilot tracking pipelines only** and is not production-grade. Expanding and balancing the bail trajectory set is scheduled for Phase 3.5.
 
 ---
 
@@ -179,16 +200,25 @@ Evaluated across the 72 canonical attempts in the verified trajectory store span
 
 | Model Architecture | Input Representation | Macro F1 | Top-1 Accuracy | Top-2 Accuracy | Inference Latency |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Model A: Calibrated Rule Baseline** | Tabular ($\Delta\theta, \Theta_{\text{abs}}, \tilde{W}_{\text{aspect}}, \mathbf{v}_{\text{flick}}$) | $6.7\%$ | $6.9\%$ | — | $< 0.1\text{ ms}$ |
-| **Model B: XGBoost GBDT** | 48-dim Kinematic Vector (Nested GroupKFold) | **$13.1\%$** | **$15.3\%$** | **$23.6\%$** | $0.51\text{ ms}$ |
-| **Model C: SkateSTGCN** | 25-Node Graph Tensor $(25, 64, 5)$ (Zero Raw RGB) | $2.5\%$ | $12.5\%$ | $20.8\%$ | $3.20\text{ ms}$ |
+| **Model A: Calibrated Rule Baseline** | Tabular ($\Delta\theta, \Theta_{\text{abs}}, \tilde{W}_{\text{aspect}}, \mathbf{v}_{\text{flick}}$) | $6.70\%$ | $6.94\%$ | — | $< 0.1\text{ ms}$ |
+| **Model B: XGBoost GBDT** | 48-dim Kinematic Vector (Nested GroupKFold) | **$13.13\%$** | **$15.28\%$** | **$23.61\%$** | $0.51\text{ ms}$ |
+| **Model C: SkateSTGCN** | 25-Node Graph Tensor $(25, 64, 5)$ (Zero Raw RGB) | **$2.47\%$** | **$12.50\%$** | **$20.83\%$** | $3.20\text{ ms}$ |
 
 ### 7.2 Per-Class Breakdown (Model B on Unseen Skaters)
-* **360 Flip:** **$47.1\%$ F1** (Precision: 50.0%, Recall: 44.4%)
-* **Ollie:** **$24.2\%$ F1** (Precision: 16.0%, Recall: 50.0%)
-* **Backside 180:** **$18.2\%$ F1** (Precision: 33.3%, Recall: 12.5%)
-* **Heelflip:** **$15.4\%$ F1** (Precision: 20.0%, Recall: 12.5%)
-* **Kickflip:** **$13.3\%$ F1** (Precision: 14.3%, Recall: 12.5%)
+* **Performing Classes:**
+  * **360 Flip:** **$47.06\%$ F1** (Precision: 50.0%, Recall: 44.4%)
+  * **Ollie:** **$24.24\%$ F1** (Precision: 16.0%, Recall: 50.0%)
+  * **Backside 180:** **$18.18\%$ F1** (Precision: 33.3%, Recall: 12.5%)
+  * **Heelflip:** **$15.38\%$ F1** (Precision: 20.0%, Recall: 12.5%)
+  * **Kickflip:** **$13.33\%$ F1** (Precision: 14.3%, Recall: 12.5%)
+* **Collapsed Classes (Zero-F1 Red Flag):**
+  * **Frontside 180:** **$0.0\%$ F1** (Precision: 0.0%, Recall: 0.0%)
+  * **Frontside Shove-it:** **$0.0\%$ F1** (Precision: 0.0%, Recall: 0.0%)
+  * **Pop Shove-it:** **$0.0\%$ F1** (Precision: 0.0%, Recall: 0.0%)
+  * **Varial / Hardflip:** **$0.0\%$ F1** (Precision: 0.0%, Recall: 0.0%)
+
+### 7.3 Model C (ST-GCN) Failure Analysis
+The ST-GCN graph architecture dropped from 25.1% to 2.47% Macro F1 when moving from the pilot to the 14-skater disjoint evaluation. The spatio-temporal graph convolutions over-indexed on spatial adjacency topologies specific to training skaters, predicting a single dominant class on test splits. Phase 3.5 mandates auditing the graph normalization, edge adjacency definitions, and incorporating multi-skater domain-adversarial regularizers before graph methods can be viable.
 
 ---
 
@@ -231,25 +261,34 @@ Evaluated across the 72 canonical attempts in the verified trajectory store span
 
 ---
 
-## 11. Final Phase 3 Exit Gate Certification & Phase 4 Unlock
+## 11. Final Phase 3 Exit Gate Certification & Phase 3.5 Recovery Mandate
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        PHASE 3 FINAL CERTIFICATION VERDICT                  │
 │                                                                             │
-│  [1] Gate 4 (Post-Impact Land/Bail Gate) : FULLY CERTIFIED (95.8% F1)       │
-│      • 0.0% False Positive Rate on landed tricks                            │
-│      • Completion verified independently from aesthetic style               │
+│  [1] Gate 3 (Trick Recognition Engine)   : FAILED (13.13% vs. 82.0% Target) │
+│      • Severe underperformance on unseen skaters in Nested GroupKFold       │
+│      • 4 trick classes collapsed to 0.0% F1 (FS180, FS Shov, Pop Shov, Var)│
+│      • Status: RECOVERY MANDATED UNDER PHASE 3.5                            │
 │                                                                             │
-│  [2] Trajectory Store Starvation         : RESOLVED (78 trajectories)       │
-│      • 72 canonical clips across all 9 classes and 14 skaters               │
+│  [2] Gate 4 (Post-Impact Land/Bail Gate) : PASS (PILOT CERTIFIED / PROV.)   │
+│      • 0.0% False Positive Rate on landed tricks (68/68 clean passed)       │
+│      • 2/8 bails caught (25% recall); 95.8% F1 skewed by class imbalance   │
+│      • Certified strictly for pilot workflows, not production-grade         │
 │                                                                             │
-│  [3] Gate 3 (Trick Recognition Engine)   : OPERATIONAL BASELINE ESTABLISHED │
-│      • Model B achieves 47.1% F1 on 360 Flips, 24.2% on Ollies              │
-│      • Multi-skater anti-leakage foundation validated                       │
+│  [3] Trajectory Store Representation     : 72 Canonical Trajectories Active │
+│      • Expanded from 19 pilot clips; 688 eligible clips remain in manifest  │
+│      • Skater sparsity persists for Ollie (2 skaters) & BS180/PopShov (3)   │
 │                                                                             │
-│  [4] Phase 4 Cleanliness Scoring Status  : UNLOCKED AND READY TO EXECUTE    │
+│  [4] Phase 4 Cleanliness Scoring Status  : PAUSED PENDING PHASE 3.5 RECOVERY│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The Post-Impact Land/Bail Verification Gate is **officially certified to serve as the upstream production gatekeeper for Phase 4 (Cleanliness Scoring Engine)**. The strict decoupling between trick execution completion and aesthetic cleanliness is operational and verified.
+### Transition to Phase 3.5: Recognition Recovery & Dataset Balancing
+Because Gate 3 failed to reach the required operational threshold ($13.13\% \ll 82.0\%$) and four classes experienced total classification collapse, **Phase 4 is formally paused**. Advancing to kinematic cleanliness scoring without reliable trick categorization would compound downstream classification errors. 
+
+Phase 3.5 is immediately initiated to execute:
+1. **Targeted Store Expansion:** Batch-process remaining eligible manifest clips prioritizing the four zero-F1 classes (`Frontside 180`, `Frontside Shove-it`, `Pop Shove-it`, `Varial / Hardflip`) and ingesting independent non-Player A skaters for `Ollie`, `Backside 180`, and `Pop Shove-it`.
+2. **Model Remediation:** Re-architect ST-GCN graph normalization, audit edge adjacencies, and engineer rotational-axis discrimination features in XGBoost.
+3. **Bail Class Balancing:** Expand and balance the post-impact bail trajectory store to elevate Gate 4 to true production certification.

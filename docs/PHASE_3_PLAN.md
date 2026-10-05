@@ -265,7 +265,7 @@ To disentangle representation modality from parameter capacity explosion, we est
 │                                                                             │
 │  [Step 3.9] Benchmark Synthesis & Formal Report Generation                  │
 │             • Output: docs/reports/PHASE_3_REPORT.md                        │
-│             • Final QC Gate verification and Phase 4 unlock                 │
+│             • Final QC Gate verification and Phase 3.5 recovery transition  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -284,4 +284,5 @@ The unified Phase 3 implementation provides the following deliverables:
 8. `src/tracking/batch_processor.py`: Automated batch trajectory expansion engine.
 9. `src/classification/phase3_pipeline.py`: Master Phase 3 orchestrator and dual evaluation benchmark runner.
 10. `docs/reports/phase3_benchmark_results.json`: Complete machine-readable benchmark results.
-11. `docs/reports/PHASE_3_REPORT.md`: Comprehensive engineering report detailing methodology, audit findings, model comparisons, confusion matrices, SHAP explanations, failure modes, and Phase 4 readiness certification.
+11. `docs/reports/PHASE_3_REPORT.md`: Comprehensive engineering report detailing methodology, audit findings, model comparisons, confusion matrices, SHAP explanations, failure modes, Gate 3 failure diagnosis, Gate 4 pilot certification, and Phase 3.5 recovery mandate.
+

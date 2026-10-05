@@ -1,12 +1,13 @@
 # Phase 4 Execution & Quality Control Report
 
 **Phase:** Phase 4 — Kinematic Cleanliness Regression & Expert Calibration  
-**Status:** In Progress / Pending Execution  
+**Status:** PAUSED (Awaiting completion of Phase 3.5: Recognition Recovery & Dataset Balancing)  
 **Target Gate:** Gate 5 (Cleanliness Alignment Spearman $\rho \ge 0.78$)  
 
 ---
 
 ## 1. Executive Summary & Work Completed
+* **Status Notice:** Phase 4 execution is paused. Upstream Gate 3 (Trick Recognition Engine) in Phase 3 failed the required generalization threshold ($13.13\% \ll 82.0\%$). To prevent compounding classification errors into aesthetic and cleanliness regressions, Phase 4 will initiate once Phase 3.5 resolves zero-F1 class collapse and balances the trajectory store.
 * **Objective:** Replace arbitrary aesthetic grading with an expert-calibrated kinematic scoring engine regressing physical variables (catch elevation, bolts offset, landing stability) against consensus human ratings.
 * **Work Completed:**
   - [ ] Implement mathematical candidate feature extractors for $r_{\text{catch}}, d_{\text{bolts}}, \sigma_{\text{stability}}^2, \Delta\theta_{\text{residual}}$ (`src/cleanliness/feature_extractor.py`).
