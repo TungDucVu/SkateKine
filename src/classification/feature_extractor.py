@@ -179,6 +179,9 @@ class KinematicFeatureExtractor:
         # Board nose-to-tail inversion
         pop_b_dx = float((pop_w['board_nose_x'] - pop_w['board_tail_x']).median()) if 'board_nose_x' in pop_w else 0.0
         land_b_dx = float((land_w['board_nose_x'] - land_w['board_tail_x']).median()) if 'board_nose_x' in land_w else 0.0
+        pop_b_dy = float((pop_w['board_nose_y'] - pop_w['board_tail_y']).median()) if 'board_nose_y' in pop_w else 0.0
+        land_b_dy = float((land_w['board_nose_y'] - land_w['board_tail_y']).median()) if 'board_nose_y' in land_w else 0.0
+
         if not np.isnan(pop_b_dx) and not np.isnan(land_b_dx) and abs(pop_b_dx) > 1.0:
             board_swap = 1.0 if (pop_b_dx * land_b_dx) < 0 else 0.0
             delta_board_norm = float(((land_b_dx / l_land) - (pop_b_dx / l_pop)) * stance_sign)
@@ -188,6 +191,120 @@ class KinematicFeatureExtractor:
         board_yaw_swap = board_swap
 
         diff_yaw_norm = float(delta_board_norm - delta_feet_norm)
+
+        # --- Phase 3.5.7 Tier 1 Physics Invariant Features ---
+        # 8A. Deck Inversion Invariant (Cosine Similarity between pop & land deck vectors)
+        pop_v_mag = np.hypot(pop_b_dx, pop_b_dy)
+        land_v_mag = np.hypot(land_b_dx, land_b_dy)
+        if pop_v_mag > 1.0 and land_v_mag > 1.0:
+            c_inv_cosine = float((pop_b_dx * land_b_dx + pop_b_dy * land_b_dy) / (pop_v_mag * land_v_mag))
+            c_inv_cosine = float(np.clip(c_inv_cosine, -1.0, 1.0))
+        else:
+            c_inv_cosine = 1.0
+
+        # 8B. Foreshortening Curve Dynamics
+        if len(lens) > 2 and l_pop > 10.0:
+            lens_norm = lens.values / l_pop
+            trough_depth = float(1.0 - min_norm_length)
+            trough_idx = int(np.argmin(lens_norm))
+            trough_symmetry = float(trough_idx / max(1, len(lens_norm) - 1))
+            trough_duration = float(np.mean(lens_norm < 0.65))
+            length_ratio_land_pop = float(l_land / l_pop)
+            recovery_slope = float((lens_norm[-1] - min_norm_length) / max(1, len(lens_norm) - 1 - trough_idx))
+        else:
+            trough_depth = 0.0
+            trough_symmetry = 0.5
+            trough_duration = 0.0
+            length_ratio_land_pop = 1.0
+            recovery_slope = 0.0
+
+        # 8C. Body vs. Board Rotational Decoupling & Rotational Coupling
+        if 'left_ankle_x' in flight_df and 'right_ankle_x' in flight_df and len(flight_df) > 1:
+            body_dx = flight_df['left_ankle_x'].values - flight_df['right_ankle_x'].values
+            body_dy = flight_df['left_ankle_y'].values - flight_df['right_ankle_y'].values
+            theta_body_raw = np.arctan2(body_dy, body_dx)
+            theta_body_unwrapped = np.unwrap(theta_body_raw)
+        elif 'left_hip_x' in flight_df and 'right_hip_x' in flight_df and len(flight_df) > 1:
+            body_dx = flight_df['left_hip_x'].values - flight_df['right_hip_x'].values
+            body_dy = flight_df['left_hip_y'].values - flight_df['right_hip_y'].values
+            theta_body_raw = np.arctan2(body_dy, body_dx)
+            theta_body_unwrapped = np.unwrap(theta_body_raw)
+        else:
+            theta_body_unwrapped = np.zeros(len(flight_df))
+
+        if 'board_nose_x' in flight_df and 'board_tail_x' in flight_df and len(flight_df) > 1:
+            board_dx_arr = flight_df['board_nose_x'].values - flight_df['board_tail_x'].values
+            board_dy_arr = flight_df['board_nose_y'].values - flight_df['board_tail_y'].values
+            theta_board_raw = np.arctan2(board_dy_arr, board_dx_arr)
+            theta_board_unwrapped = np.unwrap(theta_board_raw)
+        else:
+            theta_board_unwrapped = np.zeros(len(flight_df))
+
+        if len(flight_df) > 1:
+            delta_theta_body = float((theta_body_unwrapped[-1] - theta_body_unwrapped[0]) * stance_sign)
+            delta_theta_board = float((theta_board_unwrapped[-1] - theta_board_unwrapped[0]) * stance_sign)
+            delta_theta_relative = float(delta_theta_board - delta_theta_body)
+            rot_ratio = float(abs(delta_theta_board) / (abs(delta_theta_body) + 0.25))
+
+            omega_body = np.diff(theta_body_unwrapped) / dt
+            omega_board = np.diff(theta_board_unwrapped) / dt
+            num_coupling = np.sum(omega_body * omega_board)
+            denom_coupling = np.sqrt(np.sum(omega_body**2) * np.sum(omega_board**2) + 1e-6)
+            rotational_coupling = float(np.clip(num_coupling / denom_coupling, -1.0, 1.0))
+        else:
+            delta_theta_body = 0.0
+            delta_theta_board = 0.0
+            delta_theta_relative = 0.0
+            rot_ratio = 0.0
+            rotational_coupling = 0.0
+
+        # 8D. Ballistic Trajectory Parabolic Residuals & Hip-Board Clearance
+        if 'board_centroid_norm_y' in flight_df and len(flight_df['board_centroid_norm_y'].dropna()) >= 5:
+            y_vals = flight_df['board_centroid_norm_y'].dropna().values
+            t_steps = np.arange(len(y_vals)) * dt
+            poly_coeffs = np.polyfit(t_steps, y_vals, deg=2)
+            y_pred = np.polyval(poly_coeffs, t_steps)
+            ss_res = np.sum((y_vals - y_pred)**2)
+            ss_tot = np.sum((y_vals - np.mean(y_vals))**2) + 1e-6
+            ballistic_r2 = float(np.clip(1.0 - (ss_res / ss_tot), 0.0, 1.0))
+            ballistic_rmse = float(np.sqrt(np.mean((y_vals - y_pred)**2)))
+            effective_acc_y = float(2.0 * poly_coeffs[0])
+        elif 'board_center_y' in flight_df and len(flight_df['board_center_y'].dropna()) >= 5:
+            y_vals = flight_df['board_center_y'].dropna().values / l_pop
+            t_steps = np.arange(len(y_vals)) * dt
+            poly_coeffs = np.polyfit(t_steps, y_vals, deg=2)
+            y_pred = np.polyval(poly_coeffs, t_steps)
+            ss_res = np.sum((y_vals - y_pred)**2)
+            ss_tot = np.sum((y_vals - np.mean(y_vals))**2) + 1e-6
+            ballistic_r2 = float(np.clip(1.0 - (ss_res / ss_tot), 0.0, 1.0))
+            ballistic_rmse = float(np.sqrt(np.mean((y_vals - y_pred)**2)))
+            effective_acc_y = float(2.0 * poly_coeffs[0])
+        else:
+            ballistic_r2 = 0.0
+            ballistic_rmse = 0.0
+            effective_acc_y = 0.0
+
+        if 'mid_hip_y' in flight_df and 'board_center_y' in flight_df:
+            clearance_vals = (flight_df['board_center_y'] - flight_df['mid_hip_y']).dropna() / l_pop
+            hip_board_clearance_mean = float(clearance_vals.mean()) if len(clearance_vals) > 0 else 0.0
+            hip_board_clearance_max = float(clearance_vals.max()) if len(clearance_vals) > 0 else 0.0
+        else:
+            hip_board_clearance_mean = 0.0
+            hip_board_clearance_max = 0.0
+
+        # 8E. Pop Impulse Proxy
+        idx_pre_pop = max(0, t_pop - 3)
+        idx_post_pop = min(len(df_traj) - 1, t_pop + 3)
+        if 'board_vel_y' in df_traj:
+            v_pre = float(df_traj['board_vel_y'].iloc[idx_pre_pop])
+            v_post = float(df_traj['board_vel_y'].iloc[idx_post_pop])
+            pop_impulse_dy = float((v_post - v_pre) / l_pop)
+        else:
+            pop_impulse_dy = 0.0
+
+        # 8F. Flick Acceleration & Timing
+        flick_acc_mag = float(flick_vel_mag / max(dt, flick_frames * dt)) if flick_frames > 1 else 0.0
+        flick_timing_ratio = float(flick_frames / max(1, t_land - t_pop))
 
         # 9. Flip-Yaw Composite Interaction (Varial / Hardflip / 360 Flip vs pure flips/shuvs)
         flip_depth = float(np.clip(1.0 - min_aspect, 0.0, 1.0))
@@ -211,7 +328,7 @@ class KinematicFeatureExtractor:
         left_foot_dist = float(np.sqrt(flight_df['left_ankle_board_local_x']**2 + flight_df['left_ankle_board_local_y']**2).mean()) if 'left_ankle_board_local_x' in flight_df else 0.0
         right_foot_dist = float(np.sqrt(flight_df['right_ankle_board_local_x']**2 + flight_df['right_ankle_board_local_y']**2).mean()) if 'right_ankle_board_local_x' in flight_df else 0.0
 
-        # Construct comprehensive 48-feature dictionary
+        # Construct comprehensive feature dictionary
         features = {
             'clip_id': clip_id,
             'skater_id': skater_id,
@@ -242,6 +359,26 @@ class KinematicFeatureExtractor:
             'delta_board_norm': delta_board_norm,
             'diff_yaw_norm': diff_yaw_norm,
             'flip_yaw_product': flip_yaw_product,
+            # Phase 3.5.7 Tier 1 Physics Invariant Features
+            'c_inv_cosine': c_inv_cosine,
+            'trough_depth': trough_depth,
+            'trough_symmetry': trough_symmetry,
+            'trough_duration': trough_duration,
+            'length_ratio_land_pop': length_ratio_land_pop,
+            'recovery_slope': recovery_slope,
+            'delta_theta_body': delta_theta_body,
+            'delta_theta_board': delta_theta_board,
+            'delta_theta_relative': delta_theta_relative,
+            'rot_ratio': rot_ratio,
+            'rotational_coupling': rotational_coupling,
+            'ballistic_r2': ballistic_r2,
+            'ballistic_rmse': ballistic_rmse,
+            'effective_acc_y': effective_acc_y,
+            'hip_board_clearance_mean': hip_board_clearance_mean,
+            'hip_board_clearance_max': hip_board_clearance_max,
+            'pop_impulse_dy': pop_impulse_dy,
+            'flick_acc_mag': flick_acc_mag,
+            'flick_timing_ratio': flick_timing_ratio,
             # Aspect & Flip dynamics [P3-A3]
             'flip_cycle_count': flip_cycle_count,
             'min_aspect': min_aspect,

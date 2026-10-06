@@ -33,7 +33,11 @@ from src.classification.dataset_audit import CANONICAL_9_CLASSES
 from src.classification.feature_extractor import KinematicFeatureExtractor
 from src.classification.bail_gatekeeper import PostImpactBailGatekeeper
 from src.classification.rule_classifier import CalibratedRuleClassifier
-from src.classification.tree_classifier import SkateboardTreeClassifier, HierarchicalKinematicClassifier
+from src.classification.tree_classifier import (
+    SkateboardTreeClassifier,
+    HierarchicalKinematicClassifier,
+    PhysicsMultiTaskClassifier
+)
 from src.classification.graph_classifier import SkateSTGCN, CompactSTGCN
 from src.classification.ablation_runner import SystematicAblationRunner
 
@@ -55,6 +59,7 @@ class Phase3Engine:
         self.rule_classifier = CalibratedRuleClassifier()
         self.tree_classifier = SkateboardTreeClassifier()
         self.hierarchical_classifier = HierarchicalKinematicClassifier()
+        self.physics_multitask_classifier = PhysicsMultiTaskClassifier()
         self.ablation_runner = SystematicAblationRunner()
 
         # Load GT events if available
@@ -330,7 +335,16 @@ class Phase3Engine:
             n_outer_splits=4
         )
 
-        # 4d. Oracle Model B (Upper Bound)
+        # 4d. Physics-Informed Multi-Task Factorized Classifier (Phase 3.5.7)
+        print("\n[Step 3.5.3] Evaluating Model B3: Physics-Informed Multi-Task Classifier (Component Heads + Bayes Constraint Prior)...")
+        physics_multitask_eval = self.physics_multitask_classifier.fit_and_evaluate_nested_cv(
+            X_df=df_p_canon,
+            y=y_canon,
+            groups=skaters,
+            n_outer_splits=4
+        )
+
+        # 4e. Oracle Model B (Upper Bound)
         tree_clf_oracle = SkateboardTreeClassifier()
         tree_eval_oracle = tree_clf_oracle.fit_and_evaluate_nested_cv(
             X_df=df_o_canon,
@@ -341,7 +355,7 @@ class Phase3Engine:
             use_class_weighting=False
         )
 
-        # 4e. Stratified 5-Fold Diagnostic (Quantifying Skater-Overlap / Confounding Margin)
+        # 4f. Stratified 5-Fold Diagnostic (Quantifying Skater-Overlap / Confounding Margin)
         from sklearn.model_selection import StratifiedKFold
         from src.classification.tree_classifier import FEATURE_COLUMNS
         skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -394,6 +408,18 @@ class Phase3Engine:
                 'classes': hierarchical_eval.classes,
                 'nested_cv_results': hierarchical_eval.nested_cv_results
             },
+            'physics_multitask': {
+                'macro_f1': physics_multitask_eval.macro_f1,
+                'weighted_f1': physics_multitask_eval.weighted_f1,
+                'top1_accuracy': physics_multitask_eval.top1_accuracy,
+                'top2_accuracy': physics_multitask_eval.top2_accuracy,
+                'per_class_f1': physics_multitask_eval.per_class_f1,
+                'per_class_precision': physics_multitask_eval.per_class_precision,
+                'per_class_recall': physics_multitask_eval.per_class_recall,
+                'confusion_matrix': physics_multitask_eval.confusion_matrix,
+                'classes': physics_multitask_eval.classes,
+                'nested_cv_results': physics_multitask_eval.nested_cv_results
+            },
             'weighting_ablation_delta': {
                 'macro_f1_delta': float(tree_eval_weighted.macro_f1 - tree_eval_unweighted.macro_f1),
                 'top1_delta': float(tree_eval_weighted.top1_accuracy - tree_eval_unweighted.top1_accuracy),
@@ -419,6 +445,7 @@ class Phase3Engine:
         print(f"  • Unweighted XGBoost Macro F1:        {tree_eval_unweighted.macro_f1*100:.2f}% | Top-1: {tree_eval_unweighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_unweighted.top2_accuracy*100:.2f}%")
         print(f"  • Class-Weighted XGBoost Macro F1:    {tree_eval_weighted.macro_f1*100:.2f}% | Top-1: {tree_eval_weighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_weighted.top2_accuracy*100:.2f}% (Top-2 Delta: {model_b_results['weighting_ablation_delta']['top2_delta']*100:+.2f}%)")
         print(f"  • Hierarchical Kinematic Macro F1:    {hierarchical_eval.macro_f1*100:.2f}% | Top-1: {hierarchical_eval.top1_accuracy*100:.2f}% | Top-2: {hierarchical_eval.top2_accuracy*100:.2f}% (Macro F1 Lift: {(hierarchical_eval.macro_f1 - tree_eval_unweighted.macro_f1)*100:+.2f}%)")
+        print(f"  • Physics Multi-Task Macro F1:        {physics_multitask_eval.macro_f1*100:.2f}% | Top-1: {physics_multitask_eval.top1_accuracy*100:.2f}% | Top-2: {physics_multitask_eval.top2_accuracy*100:.2f}%")
         print(f"  • Stratified 5-Fold Macro F1:         {strat_macro_f1*100:.2f}% | Acc: {strat_acc*100:.2f}% | Skater-Overlap Confounding Delta: {skater_confounding_delta*100:+.2f}%")
         print(f"  • Model B Oracle Macro F1:            {tree_eval_oracle.macro_f1*100:.2f}% | Top-1: {tree_eval_oracle.top1_accuracy*100:.2f}%")
 
@@ -560,6 +587,9 @@ class Phase3Engine:
                     'hierarchical_macro_f1': hierarchical_eval.macro_f1,
                     'hierarchical_top1_accuracy': hierarchical_eval.top1_accuracy,
                     'hierarchical_top2_accuracy': hierarchical_eval.top2_accuracy,
+                    'physics_multitask_macro_f1': physics_multitask_eval.macro_f1,
+                    'physics_multitask_top1_accuracy': physics_multitask_eval.top1_accuracy,
+                    'physics_multitask_top2_accuracy': physics_multitask_eval.top2_accuracy,
                     'target_macro_f1': 0.82,
                     'min_class_f1': min_class_f1_unweighted,
                     'target_min_class_f1': 0.70,

@@ -286,3 +286,61 @@ The unified Phase 3 implementation provides the following deliverables:
 10. `docs/reports/phase3_benchmark_results.json`: Complete machine-readable benchmark results.
 11. `docs/reports/PHASE_3_REPORT.md`: Comprehensive engineering report detailing methodology, audit findings, model comparisons, confusion matrices, SHAP explanations, failure modes, Gate 3 failure diagnosis, Gate 4 pilot certification, and Phase 3.5 recovery mandate.
 
+---
+
+## 12. Phase 3.5.7 Plan: Physics-Informed Kinematic Engine & Multi-Task Factorization
+
+### 12.1 Core Architectural Thesis
+Monocular video creates severe geometric ambiguity for planar 2D rotations. Skateboarding tricks are not arbitrary visual patterns—they are physically governed rigid-body kinematic systems. Rather than forcing a flat or naive tree to classify 9 classes directly from noisy pixel coordinates:
+$$\text{Video} \longrightarrow \text{Kinematic State} \longrightarrow \text{Physics Invariants} \longrightarrow \text{Physical Component Heads} \longrightarrow \text{ML Ambiguity Resolver}$$
+
+By decomposing tricks into physical components based on the reference taxonomy (`Skateboarding_Kinematic_Dataset.csv`), we achieve multi-task sample efficiency:
+- *Kickflip*, *Heelflip*, *Varial*, and *360 Flip* train the **Flip Head** ($N = 50$).
+- *Pop Shove-it*, *FS Shove-it*, *Varial*, *360 Flip*, *BS 180*, and *FS 180* train the **Board Shuv Head** ($N = 80$).
+- *BS 180* and *FS 180* train the **Body Spin Head** ($N = 26$).
+
+### 12.2 Implementation Tiers
+
+#### Tier 1 — Physics Invariant Feature Suite
+1. **Deck Inversion Invariant ($C_{\text{inv}}$):**
+   $$\vec v_{\text{board}}(t) = P_{\text{nose}}(t) - P_{\text{tail}}(t), \quad C_{\text{inv}} = \frac{\vec v_{\text{pop}} \cdot \vec v_{\text{land}}}{\|\vec v_{\text{pop}}\| \|\vec v_{\text{land}}\|}$$
+   - $C_{\text{inv}} \approx +1$: Nose/tail orientation preserved (Ollie, pure Flips).
+   - $C_{\text{inv}} \approx -1$: Board physically rotated $180^\circ$ (Pop Shove-it, FS Shove-it, 180s).
+2. **Temporal Foreshortening Curve ($L(t) = \|P_{\text{nose}}(t) - P_{\text{tail}}(t)\|$):**
+   - Trough depth: $1 - \frac{\min L}{L_0}$
+   - Trough symmetry: $(t_{\text{trough}} - t_{\text{pop}}) / (t_{\text{land}} - t_{\text{pop}})$
+   - Trough duration & recovery slope
+   - Pre/post length ratio: $L_{\text{land}} / L_{\text{pop}}$
+3. **Body vs. Board Rotational Decoupling & Coupling:**
+   - $\theta_{\text{body}}(t)$ from ankle/hip vector, $\theta_{\text{board}}(t)$ from deck vector
+   - Relative yaw: $\Delta\theta_{\text{rel}} = \Delta\theta_{\text{board}} - \Delta\theta_{\text{body}}$
+   - Angular velocity coupling:
+     $$C_{\text{body,board}} = \frac{\sum \dot\theta_b \dot\theta_s}{\sqrt{\sum \dot\theta_b^2 \sum \dot\theta_s^2 + \epsilon}} \in [-1, 1]$$
+4. **Ballistic Flight Residuals:**
+   - Parabolic fit $y(t) = at^2 + bt + c$ over $[t_{\text{pop}}, t_{\text{land}}]$: record $R^2$, parabolic RMSE, and effective acceleration $a_{\text{eff}} = 2a$.
+   - CoM-to-board vertical clearance profile.
+5. **Pop & Flick Impulse Mechanics:**
+   - Pop impulse proxy $\Delta v_{\text{pop}} = v_y(t_{\text{pop}}^+) - v_y(t_{\text{pop}}^-)$.
+   - Transverse flick velocity, peak acceleration, flick onset latency, and clearance.
+
+#### Tier 2 — Multi-Task Physical Component Heads
+- **Head 1 (Flip Type):** None (0) vs. Kickflip (1) vs. Heelflip (2)
+- **Head 2 (Body Spin):** 0° (0) vs. 180° Frontside (1) vs. 180° Backside (2)
+- **Head 3 (Board Shuv):** 0° (0) vs. 180° Pop Shov (1) vs. 180° FS Shov (2) vs. 360° Shuv (3)
+
+#### Tier 3 — Physical Consistency Constraints
+Reject physically invalid state combinations via Bayesian prior masking:
+- $(\text{Body}=0^\circ, \text{Shuv}=0^\circ, \text{Flip}=\text{None}) \implies \text{Ollie}$
+- $(\text{Body}=0^\circ, \text{Shuv}=180^\circ\text{ BS}, \text{Flip}=\text{None}) \implies \text{Pop Shove-it}$
+- $(\text{Body}=180^\circ\text{ BS}, \text{Shuv}=180^\circ\text{ BS}, \text{Flip}=\text{None}) \implies \text{Backside 180}$
+- $(\text{Body}=0^\circ, \text{Shuv}=180^\circ\text{ BS}, \text{Flip}=\text{Kick}) \implies \text{Varial / Hardflip}$
+- $(\text{Body}=0^\circ, \text{Shuv}=360^\circ\text{ BS}, \text{Flip}=\text{Kick}) \implies \text{360 Flip}$
+
+#### Tier 4 — ML Ambiguity Resolution & Experimental Matrix
+Evaluate 5 structured configurations under strict 4-split nested GroupKFold on the 110 clean pro attempts:
+1. **Config 0:** Current B2 Hierarchical Baseline (28.04% Macro F1)
+2. **Config 1:** B2 + Tier 1 Physics Invariant Features
+3. **Config 2:** Multi-Task Factorized Component Heads
+4. **Config 3:** Multi-Task Heads + Physical Consistency Constraints
+5. **Config 4:** Full Physics-Informed Kinematic Engine
+

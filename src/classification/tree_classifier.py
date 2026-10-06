@@ -33,7 +33,14 @@ FEATURE_COLUMNS = [
     'left_foot_dist', 'right_foot_dist',
     'pop_board_y', 'apex_board_y', 'land_board_y',
     'pop_hip_y', 'apex_hip_y', 'land_hip_y',
-    'board_length_pop', 'board_width_pop'
+    'board_length_pop', 'board_width_pop',
+    # Phase 3.5.7 Tier 1 Physics Invariant Features
+    'c_inv_cosine', 'trough_depth', 'trough_symmetry', 'trough_duration',
+    'length_ratio_land_pop', 'recovery_slope',
+    'delta_theta_body', 'delta_theta_board', 'delta_theta_relative', 'rot_ratio', 'rotational_coupling',
+    'ballistic_r2', 'ballistic_rmse', 'effective_acc_y',
+    'hip_board_clearance_mean', 'hip_board_clearance_max',
+    'pop_impulse_dy', 'flick_acc_mag', 'flick_timing_ratio'
 ]
 
 
@@ -328,7 +335,8 @@ class HierarchicalKinematicClassifier:
         directional_cols = [
             'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
             'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
-            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean'
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean',
+            'delta_theta_body', 'delta_theta_board', 'delta_theta_relative'
         ]
         dir_indices = [feat_cols.index(c) for c in directional_cols if c in feat_cols]
 
@@ -492,7 +500,8 @@ class HierarchicalKinematicClassifier:
         directional_cols = [
             'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
             'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
-            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean'
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean',
+            'delta_theta_body', 'delta_theta_board', 'delta_theta_relative'
         ]
         self.dir_indices = [self.feat_cols.index(c) for c in directional_cols if c in self.feat_cols]
 
@@ -584,6 +593,289 @@ class HierarchicalKinematicClassifier:
                     pred_class_idx = np.argmax(probs_local)
                     pred_name = self.le_str.inverse_transform([pred_class_idx])[0]
             preds.append(pred_name)
+
+        return preds, probs
+
+
+PHYSICS_CANONICAL_MAPPING = {
+    'Ollie':              {'flip': 'None', 'body': '0',      'shuv': '0'},
+    'Kickflip':           {'flip': 'Kick', 'body': '0',      'shuv': '0'},
+    'Heelflip':           {'flip': 'Heel', 'body': '0',      'shuv': '0'},
+    'Pop Shove-it':       {'flip': 'None', 'body': '0',      'shuv': 'BS_180'},
+    'Frontside Shove-it': {'flip': 'None', 'body': '0',      'shuv': 'FS_180'},
+    'Backside 180':       {'flip': 'None', 'body': 'BS_180', 'shuv': 'BS_180'},
+    'Frontside 180':      {'flip': 'None', 'body': 'FS_180', 'shuv': 'FS_180'},
+    'Varial / Hardflip':  {'flip': 'Kick', 'body': '0',      'shuv': 'BS_180'},
+    '360 Flip':           {'flip': 'Kick', 'body': '0',      'shuv': 'BS_360'},
+}
+
+
+class PhysicsMultiTaskClassifier:
+    """
+    Model B3 / Phase 3.5.7: Physics-Informed Kinematic Engine & Multi-Task Factorized Classifier.
+    Integrates:
+      Tier 1: Physics Invariant Features (Deck Inversion C_inv, Foreshortening Profile, Rotational Coupling, Ballistics)
+      Tier 2: Multi-Task Physical Component Heads:
+              - Flip Head: None vs Kick vs Heel
+              - Body Spin Head: 0° vs FS 180 vs BS 180
+              - Board Shuv Head: 0° vs BS 180 vs FS 180 vs BS 360
+      Tier 3: Physics Consistency Constraints (Bayesian likelihood fusion rejecting physically impossible state space)
+      Tier 4: ML Ambiguity Resolver
+    """
+
+    def __init__(self, seed: int = 42):
+        self.seed = seed
+        self.classes_ = []
+        self.clf_flip = None
+        self.clf_body = None
+        self.clf_shuv = None
+        self.le_flip = None
+        self.le_body = None
+        self.le_shuv = None
+        self.feat_cols = []
+        self.dir_indices = []
+
+    def fit_and_evaluate_nested_cv(
+        self,
+        X_df: pd.DataFrame,
+        y: pd.Series,
+        groups: pd.Series,
+        n_outer_splits: int = 4
+    ) -> TreeClassifierEvaluation:
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.utils.class_weight import compute_sample_weight
+
+        self.classes_ = sorted(y.unique().tolist())
+        self.feat_cols = [c for c in FEATURE_COLUMNS if c in X_df.columns]
+        X = X_df[self.feat_cols].fillna(0.0).values
+        y_vals = y.values
+
+        y_flip = np.array([PHYSICS_CANONICAL_MAPPING[t]['flip'] for t in y_vals])
+        y_body = np.array([PHYSICS_CANONICAL_MAPPING[t]['body'] for t in y_vals])
+        y_shuv = np.array([PHYSICS_CANONICAL_MAPPING[t]['shuv'] for t in y_vals])
+
+        unique_groups = groups.unique()
+        actual_splits = min(n_outer_splits, len(unique_groups))
+        outer_gkf = GroupKFold(n_splits=actual_splits)
+
+        all_y_true = []
+        all_y_pred = []
+        all_y_probs = []
+        fold_summaries = []
+
+        directional_cols = [
+            'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
+            'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean',
+            'delta_theta_body', 'delta_theta_board', 'delta_theta_relative'
+        ]
+        self.dir_indices = [self.feat_cols.index(c) for c in directional_cols if c in self.feat_cols]
+
+        def augment_mirror(X_data, y_data):
+            X_m = X_data.copy()
+            for idx in self.dir_indices:
+                X_m[:, idx] *= -1.0
+            return np.vstack([X_data, X_m]), np.concatenate([y_data, y_data])
+
+        for fold_idx, (train_idx, test_idx) in enumerate(outer_gkf.split(X, y_vals, groups=groups)):
+            test_skaters = groups.iloc[test_idx].unique().tolist()
+
+            # 1. Train Flip Head
+            le_f = LabelEncoder()
+            y_f_tr = le_f.fit_transform(y_flip[train_idx])
+            X_f_tr, y_f_aug = augment_mirror(X[train_idx], y_f_tr)
+            w_f = compute_sample_weight('balanced', y_f_aug)
+            clf_f = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+            clf_f.fit(X_f_tr, y_f_aug, sample_weight=w_f)
+            p_f_te = clf_f.predict_proba(X[test_idx])
+
+            # 2. Train Body Spin Head
+            le_b = LabelEncoder()
+            y_b_tr = le_b.fit_transform(y_body[train_idx])
+            X_b_tr, y_b_aug = augment_mirror(X[train_idx], y_b_tr)
+            w_b = compute_sample_weight('balanced', y_b_aug)
+            clf_b = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+            clf_b.fit(X_b_tr, y_b_aug, sample_weight=w_b)
+            p_b_te = clf_b.predict_proba(X[test_idx])
+
+            # 3. Train Board Shuv Head
+            le_s = LabelEncoder()
+            y_s_tr = le_s.fit_transform(y_shuv[train_idx])
+            X_s_tr, y_s_aug = augment_mirror(X[train_idx], y_s_tr)
+            w_s = compute_sample_weight('balanced', y_s_aug)
+            clf_s = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+            clf_s.fit(X_s_tr, y_s_aug, sample_weight=w_s)
+            p_s_te = clf_s.predict_proba(X[test_idx])
+
+            # 4. Bayesian Physics Consistency Fusion (Tier 3)
+            fold_probs = np.zeros((len(test_idx), len(self.classes_)))
+            fold_preds = []
+
+            for i in range(len(test_idx)):
+                prob_dict = {}
+                for k, cname in enumerate(self.classes_):
+                    spec = PHYSICS_CANONICAL_MAPPING[cname]
+                    f_idx = list(le_f.classes_).index(spec['flip']) if spec['flip'] in le_f.classes_ else -1
+                    b_idx = list(le_b.classes_).index(spec['body']) if spec['body'] in le_b.classes_ else -1
+                    s_idx = list(le_s.classes_).index(spec['shuv']) if spec['shuv'] in le_s.classes_ else -1
+
+                    p_val = (p_f_te[i, f_idx] if f_idx >= 0 else 0.01) * \
+                            (p_b_te[i, b_idx] if b_idx >= 0 else 0.01) * \
+                            (p_s_te[i, s_idx] if s_idx >= 0 else 0.01)
+                    prob_dict[cname] = p_val
+                    fold_probs[i, k] = p_val
+
+                # Normalize probabilities across canonical classes
+                sum_p = fold_probs[i].sum()
+                if sum_p > 0:
+                    fold_probs[i] /= sum_p
+
+                best_trick = max(prob_dict, key=prob_dict.get)
+                fold_preds.append(best_trick)
+
+            all_y_true.extend(y_vals[test_idx].tolist())
+            all_y_pred.extend(fold_preds)
+            all_y_probs.extend(fold_probs.tolist())
+
+            fold_acc = float(accuracy_score(y_vals[test_idx], fold_preds))
+            fold_summaries.append({
+                'fold': fold_idx,
+                'test_skaters': test_skaters,
+                'n_test_samples': len(test_idx),
+                'fold_acc': fold_acc
+            })
+
+        all_y_true_arr = np.array(all_y_true)
+        all_y_pred_arr = np.array(all_y_pred)
+        all_y_probs_arr = np.array(all_y_probs)
+
+        macro_f1 = float(f1_score(all_y_true_arr, all_y_pred_arr, average='macro', zero_division=0))
+        weighted_f1 = float(f1_score(all_y_true_arr, all_y_pred_arr, average='weighted', zero_division=0))
+        top1_acc = float(accuracy_score(all_y_true_arr, all_y_pred_arr))
+
+        top2_count = 0
+        for i, true_label in enumerate(all_y_true_arr):
+            top2_indices = np.argsort(all_y_probs_arr[i])[-2:]
+            top2_names = [self.classes_[idx] for idx in top2_indices]
+            if true_label in top2_names:
+                top2_count += 1
+        top2_acc = float(top2_count / max(1, len(all_y_true_arr)))
+
+        per_class_f1 = {}
+        per_class_prec = {}
+        per_class_rec = {}
+        for cname in self.classes_:
+            c_mask_true = (all_y_true_arr == cname)
+            c_mask_pred = (all_y_pred_arr == cname)
+            per_class_f1[cname] = float(f1_score(c_mask_true, c_mask_pred, zero_division=0))
+            per_class_prec[cname] = float(precision_score(c_mask_true, c_mask_pred, zero_division=0))
+            per_class_rec[cname] = float(recall_score(c_mask_true, c_mask_pred, zero_division=0))
+
+        cm = confusion_matrix(all_y_true_arr, all_y_pred_arr, labels=self.classes_).tolist()
+
+        # Fit on full dataset
+        self.fit(X_df, y)
+
+        return TreeClassifierEvaluation(
+            macro_f1=macro_f1,
+            weighted_f1=weighted_f1,
+            top1_accuracy=top1_acc,
+            top2_accuracy=top2_acc,
+            per_class_f1=per_class_f1,
+            per_class_precision=per_class_prec,
+            per_class_recall=per_class_rec,
+            confusion_matrix=cm,
+            classes=self.classes_,
+            shap_importance={},
+            nested_cv_results=fold_summaries
+        )
+
+    def fit(self, X_df: pd.DataFrame, y: pd.Series):
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.utils.class_weight import compute_sample_weight
+
+        self.classes_ = sorted(y.unique().tolist())
+        self.feat_cols = [c for c in FEATURE_COLUMNS if c in X_df.columns]
+        X = X_df[self.feat_cols].fillna(0.0).values
+        y_vals = y.values
+
+        y_flip = np.array([PHYSICS_CANONICAL_MAPPING[t]['flip'] for t in y_vals])
+        y_body = np.array([PHYSICS_CANONICAL_MAPPING[t]['body'] for t in y_vals])
+        y_shuv = np.array([PHYSICS_CANONICAL_MAPPING[t]['shuv'] for t in y_vals])
+
+        directional_cols = [
+            'canonical_delta_theta_net', 'delta_theta_net', 'flick_dx',
+            'flick_direction_x', 'flick_local_y_delta', 'delta_feet_dx',
+            'delta_feet_norm', 'delta_board_norm', 'diff_yaw_norm', 'bvel_x_mean',
+            'delta_theta_body', 'delta_theta_board', 'delta_theta_relative'
+        ]
+        self.dir_indices = [self.feat_cols.index(c) for c in directional_cols if c in self.feat_cols]
+
+        def augment_mirror(X_data, y_data):
+            X_m = X_data.copy()
+            for idx in self.dir_indices:
+                X_m[:, idx] *= -1.0
+            return np.vstack([X_data, X_m]), np.concatenate([y_data, y_data])
+
+        # 1. Fit Flip Head
+        self.le_flip = LabelEncoder()
+        y_f = self.le_flip.fit_transform(y_flip)
+        X_f, y_f_aug = augment_mirror(X, y_f)
+        w_f = compute_sample_weight('balanced', y_f_aug)
+        self.clf_flip = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+        self.clf_flip.fit(X_f, y_f_aug, sample_weight=w_f)
+
+        # 2. Fit Body Spin Head
+        self.le_body = LabelEncoder()
+        y_b = self.le_body.fit_transform(y_body)
+        X_b, y_b_aug = augment_mirror(X, y_b)
+        w_b = compute_sample_weight('balanced', y_b_aug)
+        self.clf_body = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+        self.clf_body.fit(X_b, y_b_aug, sample_weight=w_b)
+
+        # 3. Fit Board Shuv Head
+        self.le_shuv = LabelEncoder()
+        y_s = self.le_shuv.fit_transform(y_shuv)
+        X_s, y_s_aug = augment_mirror(X, y_s)
+        w_s = compute_sample_weight('balanced', y_s_aug)
+        self.clf_shuv = xgb.XGBClassifier(n_estimators=45, max_depth=3, learning_rate=0.05, random_state=self.seed, eval_metric='mlogloss')
+        self.clf_shuv.fit(X_s, y_s_aug, sample_weight=w_s)
+
+        return self
+
+    def predict(self, X_df: pd.DataFrame) -> Tuple[List[str], np.ndarray]:
+        if self.clf_flip is None:
+            raise ValueError("PhysicsMultiTaskClassifier must be fitted before predict.")
+        X = X_df[self.feat_cols].fillna(0.0).values
+        n_samples = len(X)
+
+        p_f = self.clf_flip.predict_proba(X)
+        p_b = self.clf_body.predict_proba(X)
+        p_s = self.clf_shuv.predict_proba(X)
+
+        preds = []
+        probs = np.zeros((n_samples, len(self.classes_)))
+
+        for i in range(n_samples):
+            prob_dict = {}
+            for k, cname in enumerate(self.classes_):
+                spec = PHYSICS_CANONICAL_MAPPING[cname]
+                f_idx = list(self.le_flip.classes_).index(spec['flip']) if spec['flip'] in self.le_flip.classes_ else -1
+                b_idx = list(self.le_body.classes_).index(spec['body']) if spec['body'] in self.le_body.classes_ else -1
+                s_idx = list(self.le_shuv.classes_).index(spec['shuv']) if spec['shuv'] in self.le_shuv.classes_ else -1
+
+                p_val = (p_f[i, f_idx] if f_idx >= 0 else 0.01) * \
+                        (p_b[i, b_idx] if b_idx >= 0 else 0.01) * \
+                        (p_s[i, s_idx] if s_idx >= 0 else 0.01)
+                prob_dict[cname] = p_val
+                probs[i, k] = p_val
+
+            sum_p = probs[i].sum()
+            if sum_p > 0:
+                probs[i] /= sum_p
+
+            best_trick = max(prob_dict, key=prob_dict.get)
+            preds.append(best_trick)
 
         return preds, probs
 
