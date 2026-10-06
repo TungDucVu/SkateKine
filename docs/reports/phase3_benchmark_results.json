@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-10-06T22:14:01Z",
-  "execution_time_sec": 44.53214073181152,
+  "timestamp": "2026-10-06T22:49:06Z",
+  "execution_time_sec": 47.07081079483032,
   "dataset_universe": {
     "total_manifest_clips": 1035,
     "tracking_eligible_canonical_candidates": 688,
@@ -191,6 +191,10 @@
       "physics_multitask_macro_f1": 0.17436665374401875,
       "physics_multitask_top1_accuracy": 0.17272727272727273,
       "physics_multitask_top2_accuracy": 0.36363636363636365,
+      "temporal_hybrid_macro_f1": 0.2807709153185034,
+      "temporal_hybrid_top1_accuracy": 0.3,
+      "temporal_hybrid_top2_accuracy": 0.4636363636363636,
+      "temporal_hybrid_min_class_f1": 0.09090909090909091,
       "target_macro_f1": 0.82,
       "min_class_f1": 0.0,
       "target_min_class_f1": 0.7,
@@ -209,7 +213,7 @@
     },
     "rtf_latency_gate": {
       "status": "PASS",
-      "pipeline_rtf": 0.00028757600055541845,
+      "pipeline_rtf": 0.00020214800059329717,
       "target_rtf": 0.5
     }
   },
@@ -1009,6 +1013,428 @@
         }
       ]
     },
+    "physics_temporal_hybrid": {
+      "macro_f1": 0.2807709153185034,
+      "weighted_f1": 0.30246539484895535,
+      "top1_accuracy": 0.3,
+      "top2_accuracy": 0.4636363636363636,
+      "per_class_f1": {
+        "360 Flip": 0.47058823529411764,
+        "Backside 180": 0.4166666666666667,
+        "Frontside 180": 0.2727272727272727,
+        "Frontside Shove-it": 0.26666666666666666,
+        "Heelflip": 0.1,
+        "Kickflip": 0.25806451612903225,
+        "Ollie": 0.09090909090909091,
+        "Pop Shove-it": 0.125,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "per_class_precision": {
+        "360 Flip": 0.5,
+        "Backside 180": 0.45454545454545453,
+        "Frontside 180": 0.3333333333333333,
+        "Frontside Shove-it": 0.23529411764705882,
+        "Heelflip": 0.09090909090909091,
+        "Kickflip": 0.2222222222222222,
+        "Ollie": 0.07142857142857142,
+        "Pop Shove-it": 0.3333333333333333,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "per_class_recall": {
+        "360 Flip": 0.4444444444444444,
+        "Backside 180": 0.38461538461538464,
+        "Frontside 180": 0.23076923076923078,
+        "Frontside Shove-it": 0.3076923076923077,
+        "Heelflip": 0.1111111111111111,
+        "Kickflip": 0.3076923076923077,
+        "Ollie": 0.125,
+        "Pop Shove-it": 0.07692307692307693,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          5,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          3,
+          1,
+          2,
+          1,
+          2,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          3,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          3,
+          4,
+          1,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          0,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          2,
+          0,
+          0,
+          8,
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          3,
+          0,
+          0,
+          10
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ],
+      "nested_cv_results": [
+        {
+          "fold": 1,
+          "test_skaters": [
+            "player_a"
+          ],
+          "n_test": 46,
+          "macro_f1": 0.16360072294024822,
+          "top1_accuracy": 0.2826086956521739
+        },
+        {
+          "fold": 2,
+          "test_skaters": [
+            "sewa_kroetkov",
+            "luan_oliveira",
+            "chris_cole",
+            "pj_ladd",
+            "torey_pudwill",
+            "tom_fyock"
+          ],
+          "n_test": 22,
+          "macro_f1": 0.09126984126984126,
+          "top1_accuracy": 0.18181818181818182
+        },
+        {
+          "fold": 3,
+          "test_skaters": [
+            "jack_colbourn",
+            "chris_joslin",
+            "shane_oneill"
+          ],
+          "n_test": 21,
+          "macro_f1": 0.19642857142857142,
+          "top1_accuracy": 0.47619047619047616
+        },
+        {
+          "fold": 4,
+          "test_skaters": [
+            "player_b",
+            "sean_malto",
+            "cody_cepeda",
+            "ishod_wair"
+          ],
+          "n_test": 21,
+          "macro_f1": 0.28154761904761905,
+          "top1_accuracy": 0.2857142857142857
+        }
+      ]
+    },
+    "phase358_experimental_matrix": {
+      "C0_B2_Baseline": {
+        "macro_f1": 0.25117541072299887,
+        "top1_accuracy": 0.2818181818181818,
+        "top2_accuracy": 0.5272727272727272,
+        "per_class_f1": {
+          "360 Flip": 0.47058823529411764,
+          "Backside 180": 0.4166666666666667,
+          "Frontside 180": 0.2727272727272727,
+          "Frontside Shove-it": 0.0,
+          "Heelflip": 0.1,
+          "Kickflip": 0.25806451612903225,
+          "Ollie": 0.21621621621621623,
+          "Pop Shove-it": 0.0,
+          "Varial / Hardflip": 0.5263157894736842
+        },
+        "description": "Hierarchical Kinematic Baseline (Phase 3.5.6)"
+      },
+      "C1_Compact_Physics": {
+        "macro_f1": 0.09888175494917067,
+        "top1_accuracy": 0.2,
+        "per_class_f1": {
+          "360 Flip": 0.0,
+          "Backside 180": 0.0,
+          "Frontside 180": 0.0,
+          "Frontside Shove-it": 0.14285714285714285,
+          "Heelflip": 0.16,
+          "Kickflip": 0.25,
+          "Ollie": 0.0,
+          "Pop Shove-it": 0.0,
+          "Varial / Hardflip": 0.33707865168539325
+        },
+        "description": "Compact Physics Invariant States Only"
+      },
+      "C2_Routing_SignedScoop": {
+        "macro_f1": 0.09888175494917067,
+        "top1_accuracy": 0.2,
+        "per_class_f1": {
+          "360 Flip": 0.0,
+          "Backside 180": 0.0,
+          "Frontside 180": 0.0,
+          "Frontside Shove-it": 0.14285714285714285,
+          "Heelflip": 0.16,
+          "Kickflip": 0.25,
+          "Ollie": 0.0,
+          "Pop Shove-it": 0.0,
+          "Varial / Hardflip": 0.33707865168539325
+        },
+        "description": "Physics Routing + Signed Scoop Sweep"
+      },
+      "C3_Prototypes_DTW": {
+        "macro_f1": 0.08629148629148631,
+        "top1_accuracy": 0.07272727272727272,
+        "per_class_f1": {
+          "360 Flip": 0.0,
+          "Backside 180": 0.4,
+          "Frontside 180": 0.0,
+          "Frontside Shove-it": 0.14285714285714285,
+          "Heelflip": 0.0,
+          "Kickflip": 0.0,
+          "Ollie": 0.18181818181818182,
+          "Pop Shove-it": 0.05194805194805195,
+          "Varial / Hardflip": 0.0
+        },
+        "description": "Temporal Motion Prototypes + Weighted DTW Only"
+      },
+      "C4_Physics_DTW": {
+        "macro_f1": 0.06822451266895711,
+        "top1_accuracy": 0.10909090909090909,
+        "per_class_f1": {
+          "360 Flip": 0.24324324324324326,
+          "Backside 180": 0.0,
+          "Frontside 180": 0.0,
+          "Frontside Shove-it": 0.14285714285714285,
+          "Heelflip": 0.15384615384615385,
+          "Kickflip": 0.07407407407407407,
+          "Ollie": 0.0,
+          "Pop Shove-it": 0.0,
+          "Varial / Hardflip": 0.0
+        },
+        "description": "Physics Contradiction Cost + Temporal DTW Prototypes"
+      },
+      "C5_Hybrid_Resolver": {
+        "macro_f1": 0.2807709153185034,
+        "top1_accuracy": 0.3,
+        "top2_accuracy": 0.4636363636363636,
+        "per_class_f1": {
+          "360 Flip": 0.47058823529411764,
+          "Backside 180": 0.4166666666666667,
+          "Frontside 180": 0.2727272727272727,
+          "Frontside Shove-it": 0.26666666666666666,
+          "Heelflip": 0.1,
+          "Kickflip": 0.25806451612903225,
+          "Ollie": 0.09090909090909091,
+          "Pop Shove-it": 0.125,
+          "Varial / Hardflip": 0.5263157894736842
+        },
+        "per_class_precision": {
+          "360 Flip": 0.5,
+          "Backside 180": 0.45454545454545453,
+          "Frontside 180": 0.3333333333333333,
+          "Frontside Shove-it": 0.23529411764705882,
+          "Heelflip": 0.09090909090909091,
+          "Kickflip": 0.2222222222222222,
+          "Ollie": 0.07142857142857142,
+          "Pop Shove-it": 0.3333333333333333,
+          "Varial / Hardflip": 0.5263157894736842
+        },
+        "per_class_recall": {
+          "360 Flip": 0.4444444444444444,
+          "Backside 180": 0.38461538461538464,
+          "Frontside 180": 0.23076923076923078,
+          "Frontside Shove-it": 0.3076923076923077,
+          "Heelflip": 0.1111111111111111,
+          "Kickflip": 0.3076923076923077,
+          "Ollie": 0.125,
+          "Pop Shove-it": 0.07692307692307693,
+          "Varial / Hardflip": 0.5263157894736842
+        },
+        "confusion_matrix": [
+          [
+            4,
+            0,
+            0,
+            0,
+            0,
+            5,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            5,
+            3,
+            3,
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            4,
+            3,
+            1,
+            2,
+            1,
+            2,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            4,
+            2,
+            1,
+            1,
+            1,
+            3
+          ],
+          [
+            0,
+            0,
+            0,
+            2,
+            1,
+            3,
+            1,
+            0,
+            2
+          ],
+          [
+            0,
+            0,
+            2,
+            0,
+            3,
+            4,
+            1,
+            0,
+            3
+          ],
+          [
+            0,
+            0,
+            0,
+            5,
+            0,
+            1,
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
+            2,
+            0,
+            0,
+            8,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1,
+            0,
+            2,
+            3,
+            0,
+            0,
+            10
+          ]
+        ],
+        "description": "Full Hybrid Engine (Physics Routing + Signed Scoop + DTW Prototypes + Tree ML)"
+      }
+    },
     "weighting_ablation_delta": {
       "macro_f1_delta": 0.017472319562102795,
       "top1_delta": 0.009090909090909094,
@@ -1058,11 +1484,234 @@
       "skater_overlap_confounding_delta": 0.22414270823431043
     }
   },
+  "phase358_matrix": {
+    "C0_B2_Baseline": {
+      "macro_f1": 0.25117541072299887,
+      "top1_accuracy": 0.2818181818181818,
+      "top2_accuracy": 0.5272727272727272,
+      "per_class_f1": {
+        "360 Flip": 0.47058823529411764,
+        "Backside 180": 0.4166666666666667,
+        "Frontside 180": 0.2727272727272727,
+        "Frontside Shove-it": 0.0,
+        "Heelflip": 0.1,
+        "Kickflip": 0.25806451612903225,
+        "Ollie": 0.21621621621621623,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "description": "Hierarchical Kinematic Baseline (Phase 3.5.6)"
+    },
+    "C1_Compact_Physics": {
+      "macro_f1": 0.09888175494917067,
+      "top1_accuracy": 0.2,
+      "per_class_f1": {
+        "360 Flip": 0.0,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.14285714285714285,
+        "Heelflip": 0.16,
+        "Kickflip": 0.25,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.33707865168539325
+      },
+      "description": "Compact Physics Invariant States Only"
+    },
+    "C2_Routing_SignedScoop": {
+      "macro_f1": 0.09888175494917067,
+      "top1_accuracy": 0.2,
+      "per_class_f1": {
+        "360 Flip": 0.0,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.14285714285714285,
+        "Heelflip": 0.16,
+        "Kickflip": 0.25,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.33707865168539325
+      },
+      "description": "Physics Routing + Signed Scoop Sweep"
+    },
+    "C3_Prototypes_DTW": {
+      "macro_f1": 0.08629148629148631,
+      "top1_accuracy": 0.07272727272727272,
+      "per_class_f1": {
+        "360 Flip": 0.0,
+        "Backside 180": 0.4,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.14285714285714285,
+        "Heelflip": 0.0,
+        "Kickflip": 0.0,
+        "Ollie": 0.18181818181818182,
+        "Pop Shove-it": 0.05194805194805195,
+        "Varial / Hardflip": 0.0
+      },
+      "description": "Temporal Motion Prototypes + Weighted DTW Only"
+    },
+    "C4_Physics_DTW": {
+      "macro_f1": 0.06822451266895711,
+      "top1_accuracy": 0.10909090909090909,
+      "per_class_f1": {
+        "360 Flip": 0.24324324324324326,
+        "Backside 180": 0.0,
+        "Frontside 180": 0.0,
+        "Frontside Shove-it": 0.14285714285714285,
+        "Heelflip": 0.15384615384615385,
+        "Kickflip": 0.07407407407407407,
+        "Ollie": 0.0,
+        "Pop Shove-it": 0.0,
+        "Varial / Hardflip": 0.0
+      },
+      "description": "Physics Contradiction Cost + Temporal DTW Prototypes"
+    },
+    "C5_Hybrid_Resolver": {
+      "macro_f1": 0.2807709153185034,
+      "top1_accuracy": 0.3,
+      "top2_accuracy": 0.4636363636363636,
+      "per_class_f1": {
+        "360 Flip": 0.47058823529411764,
+        "Backside 180": 0.4166666666666667,
+        "Frontside 180": 0.2727272727272727,
+        "Frontside Shove-it": 0.26666666666666666,
+        "Heelflip": 0.1,
+        "Kickflip": 0.25806451612903225,
+        "Ollie": 0.09090909090909091,
+        "Pop Shove-it": 0.125,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "per_class_precision": {
+        "360 Flip": 0.5,
+        "Backside 180": 0.45454545454545453,
+        "Frontside 180": 0.3333333333333333,
+        "Frontside Shove-it": 0.23529411764705882,
+        "Heelflip": 0.09090909090909091,
+        "Kickflip": 0.2222222222222222,
+        "Ollie": 0.07142857142857142,
+        "Pop Shove-it": 0.3333333333333333,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "per_class_recall": {
+        "360 Flip": 0.4444444444444444,
+        "Backside 180": 0.38461538461538464,
+        "Frontside 180": 0.23076923076923078,
+        "Frontside Shove-it": 0.3076923076923077,
+        "Heelflip": 0.1111111111111111,
+        "Kickflip": 0.3076923076923077,
+        "Ollie": 0.125,
+        "Pop Shove-it": 0.07692307692307693,
+        "Varial / Hardflip": 0.5263157894736842
+      },
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0,
+          0,
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          5,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          3,
+          1,
+          2,
+          1,
+          2,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          2,
+          1,
+          3,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          3,
+          4,
+          1,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          0,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          2,
+          0,
+          0,
+          8,
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1,
+          0,
+          2,
+          3,
+          0,
+          0,
+          10
+        ]
+      ],
+      "description": "Full Hybrid Engine (Physics Routing + Signed Scoop + DTW Prototypes + Tree ML)"
+    }
+  },
   "model_c_stgcn_graph": {
     "audited_compact_stgcn": {
-      "macro_f1": 0.07976087355959788,
-      "top1_accuracy": 0.11818181818181818,
-      "top2_accuracy": 0.2727272727272727,
+      "macro_f1": 0.15483476218770337,
+      "top1_accuracy": 0.16363636363636364,
+      "top2_accuracy": 0.3181818181818182,
       "evaluation_protocol": "Nested GroupKFold by skater_id (4 splits)",
       "nodes": 6,
       "node_labels": [
@@ -1081,7 +1730,7 @@
           "test_skaters": [
             "player_a"
           ],
-          "accuracy": 0.08695652173913043
+          "accuracy": 0.1956521739130435
         },
         {
           "fold": 1,
@@ -1115,7 +1764,7 @@
           "accuracy": 0.14285714285714285
         }
       ],
-      "findings": "ST-GCN achieves 7.98% F1 with drop-edge & torso normalization (reaching up to 20.8% accuracy on unseen pro skater holdouts), but remains severely sample-starved at N=110 attempts."
+      "findings": "ST-GCN achieves 15.48% F1 with drop-edge & torso normalization (reaching up to 20.8% accuracy on unseen pro skater holdouts), but remains severely sample-starved at N=110 attempts."
     },
     "zero_raw_rgb_downstream": true
   },
@@ -1277,9 +1926,9 @@
     }
   },
   "latency_profiling": {
-    "inference_latency_per_clip_ms": 0.7189400013885461,
-    "ms_per_frame": 0.004792933342590307,
-    "real_time_factor_rtf": 0.00028757600055541845,
+    "inference_latency_per_clip_ms": 0.505370001483243,
+    "ms_per_frame": 0.00336913334322162,
+    "real_time_factor_rtf": 0.00020214800059329717,
     "hardware": "CPU (x86_64) Single-Threaded"
   }
 }

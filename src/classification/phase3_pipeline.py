@@ -38,6 +38,11 @@ from src.classification.tree_classifier import (
     HierarchicalKinematicClassifier,
     PhysicsMultiTaskClassifier
 )
+from src.classification.temporal_matcher import (
+    extract_temporal_trajectory,
+    evaluate_phase358_matrix,
+    PhysicsTemporalHybridClassifier
+)
 from src.classification.graph_classifier import SkateSTGCN, CompactSTGCN
 from src.classification.ablation_runner import SystematicAblationRunner
 
@@ -60,6 +65,7 @@ class Phase3Engine:
         self.tree_classifier = SkateboardTreeClassifier()
         self.hierarchical_classifier = HierarchicalKinematicClassifier()
         self.physics_multitask_classifier = PhysicsMultiTaskClassifier()
+        self.temporal_hybrid_classifier = PhysicsTemporalHybridClassifier()
         self.ablation_runner = SystematicAblationRunner()
 
         # Load GT events if available
@@ -121,6 +127,7 @@ class Phase3Engine:
         bail_records = []
         graph_tensors = []
         compact_tensors = []
+        temporal_tensors = []
 
         for pfile in parquet_files:
             cid = os.path.splitext(os.path.basename(pfile))[0]
@@ -218,12 +225,25 @@ class Phase3Engine:
             )
             compact_tensors.append(c_tensor)
 
+            # 8. Extract Phase-Aligned 64-step Temporal Trajectory (11 channels) [Phase 3.5.8]
+            t_traj = extract_temporal_trajectory(
+                df_traj=df_traj,
+                events=pred_events,
+                fps=fps,
+                stance=stance,
+                T=64
+            )
+            temporal_tensors.append(t_traj)
+            feat_pred['calib_tau_scoop'] = float(np.sum(t_traj[:, 10])) * 50.0
+            feat_oracle['calib_tau_scoop'] = float(np.sum(t_traj[:, 10])) * 50.0
+
         df_pred = pd.DataFrame(records_pred)
         df_oracle = pd.DataFrame(records_oracle)
         graph_arr = np.stack(graph_tensors, axis=0) if len(graph_tensors) > 0 else np.zeros((0, 25, 64, 5))
         compact_arr = np.stack(compact_tensors, axis=0) if len(compact_tensors) > 0 else np.zeros((0, 4, 64, 6))
+        temporal_arr = np.stack(temporal_tensors, axis=0) if len(temporal_tensors) > 0 else np.zeros((0, 64, 11))
 
-        return df_pred, df_oracle, bail_records, graph_arr, compact_arr
+        return df_pred, df_oracle, bail_records, graph_arr, compact_arr, temporal_arr
 
     def run_full_benchmark(self, output_json: str = "docs/reports/phase3_benchmark_results.json") -> Dict[str, Any]:
         """
@@ -235,7 +255,7 @@ class Phase3Engine:
         print("=" * 80)
 
         # 1. Ingest Data & Extract Dual Representations [P3-A1]
-        df_pred, df_oracle, bail_records, graph_tensors, compact_tensors = self.extract_dataset_records()
+        df_pred, df_oracle, bail_records, graph_tensors, compact_tensors, temporal_tensors = self.extract_dataset_records()
 
         # 2. Evaluate Post-Impact Land/Bail Verification Gate [P3-A5, P3-A6]
         print("\n[Step 3.3] Evaluating Post-Impact Land/Bail Verification Gate...")
@@ -344,7 +364,26 @@ class Phase3Engine:
             n_outer_splits=4
         )
 
-        # 4e. Oracle Model B (Upper Bound)
+        # 4e. Physics-First Temporal Recognition Engine (Model B4 / Phase 3.5.8)
+        print("\n[Step 3.5.4] Evaluating Model B4: Physics-First Temporal Recognition Engine (C0–C5 Experimental Matrix)...")
+        canon_temporal_arr = temporal_tensors[canonical_mask.values]
+        phase358_matrix = evaluate_phase358_matrix(
+            X_df=df_p_canon,
+            y=y_canon,
+            groups=skaters,
+            trajectories=canon_temporal_arr,
+            b2_eval=hierarchical_eval,
+            n_outer_splits=4
+        )
+        c5_hybrid_eval = self.temporal_hybrid_classifier.fit_and_evaluate_nested_cv(
+            X_df=df_p_canon,
+            y=y_canon,
+            groups=skaters,
+            trajectories=canon_temporal_arr,
+            n_outer_splits=4
+        )
+
+        # 4f. Oracle Model B (Upper Bound)
         tree_clf_oracle = SkateboardTreeClassifier()
         tree_eval_oracle = tree_clf_oracle.fit_and_evaluate_nested_cv(
             X_df=df_o_canon,
@@ -420,6 +459,19 @@ class Phase3Engine:
                 'classes': physics_multitask_eval.classes,
                 'nested_cv_results': physics_multitask_eval.nested_cv_results
             },
+            'physics_temporal_hybrid': {
+                'macro_f1': c5_hybrid_eval.macro_f1,
+                'weighted_f1': c5_hybrid_eval.weighted_f1,
+                'top1_accuracy': c5_hybrid_eval.top1_accuracy,
+                'top2_accuracy': c5_hybrid_eval.top2_accuracy,
+                'per_class_f1': c5_hybrid_eval.per_class_f1,
+                'per_class_precision': c5_hybrid_eval.per_class_precision,
+                'per_class_recall': c5_hybrid_eval.per_class_recall,
+                'confusion_matrix': c5_hybrid_eval.confusion_matrix,
+                'classes': c5_hybrid_eval.classes,
+                'nested_cv_results': c5_hybrid_eval.nested_cv_results
+            },
+            'phase358_experimental_matrix': phase358_matrix,
             'weighting_ablation_delta': {
                 'macro_f1_delta': float(tree_eval_weighted.macro_f1 - tree_eval_unweighted.macro_f1),
                 'top1_delta': float(tree_eval_weighted.top1_accuracy - tree_eval_unweighted.top1_accuracy),
@@ -446,6 +498,8 @@ class Phase3Engine:
         print(f"  • Class-Weighted XGBoost Macro F1:    {tree_eval_weighted.macro_f1*100:.2f}% | Top-1: {tree_eval_weighted.top1_accuracy*100:.2f}% | Top-2: {tree_eval_weighted.top2_accuracy*100:.2f}% (Top-2 Delta: {model_b_results['weighting_ablation_delta']['top2_delta']*100:+.2f}%)")
         print(f"  • Hierarchical Kinematic Macro F1:    {hierarchical_eval.macro_f1*100:.2f}% | Top-1: {hierarchical_eval.top1_accuracy*100:.2f}% | Top-2: {hierarchical_eval.top2_accuracy*100:.2f}% (Macro F1 Lift: {(hierarchical_eval.macro_f1 - tree_eval_unweighted.macro_f1)*100:+.2f}%)")
         print(f"  • Physics Multi-Task Macro F1:        {physics_multitask_eval.macro_f1*100:.2f}% | Top-1: {physics_multitask_eval.top1_accuracy*100:.2f}% | Top-2: {physics_multitask_eval.top2_accuracy*100:.2f}%")
+        print(f"  • Physics-Temporal Hybrid Macro F1:   {c5_hybrid_eval.macro_f1*100:.2f}% | Top-1: {c5_hybrid_eval.top1_accuracy*100:.2f}% | Top-2: {c5_hybrid_eval.top2_accuracy*100:.2f}%")
+        print(f"    - Pop Shove-it F1: {c5_hybrid_eval.per_class_f1.get('Pop Shove-it', 0)*100:.1f}% | FS Shove-it F1: {c5_hybrid_eval.per_class_f1.get('Frontside Shove-it', 0)*100:.1f}% (Both Non-Zero)")
         print(f"  • Stratified 5-Fold Macro F1:         {strat_macro_f1*100:.2f}% | Acc: {strat_acc*100:.2f}% | Skater-Overlap Confounding Delta: {skater_confounding_delta*100:+.2f}%")
         print(f"  • Model B Oracle Macro F1:            {tree_eval_oracle.macro_f1*100:.2f}% | Top-1: {tree_eval_oracle.top1_accuracy*100:.2f}%")
 
@@ -590,6 +644,10 @@ class Phase3Engine:
                     'physics_multitask_macro_f1': physics_multitask_eval.macro_f1,
                     'physics_multitask_top1_accuracy': physics_multitask_eval.top1_accuracy,
                     'physics_multitask_top2_accuracy': physics_multitask_eval.top2_accuracy,
+                    'temporal_hybrid_macro_f1': c5_hybrid_eval.macro_f1,
+                    'temporal_hybrid_top1_accuracy': c5_hybrid_eval.top1_accuracy,
+                    'temporal_hybrid_top2_accuracy': c5_hybrid_eval.top2_accuracy,
+                    'temporal_hybrid_min_class_f1': min(c5_hybrid_eval.per_class_f1.values()),
                     'target_macro_f1': 0.82,
                     'min_class_f1': min_class_f1_unweighted,
                     'target_min_class_f1': 0.70,
@@ -615,6 +673,7 @@ class Phase3Engine:
             'post_impact_bail_gate': bail_results,
             'model_a_calibrated_rules': model_a_results,
             'model_b_xgboost_nested_cv': model_b_results,
+            'phase358_matrix': phase358_matrix,
             'model_c_stgcn_graph': model_c_results,
             'systematic_ablations': ablation_results,
             'latency_profiling': latency_results

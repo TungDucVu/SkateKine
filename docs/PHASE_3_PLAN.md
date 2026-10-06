@@ -337,10 +337,132 @@ Reject physically invalid state combinations via Bayesian prior masking:
 - $(\text{Body}=0^\circ, \text{Shuv}=360^\circ\text{ BS}, \text{Flip}=\text{Kick}) \implies \text{360 Flip}$
 
 #### Tier 4 — ML Ambiguity Resolution & Experimental Matrix
-Evaluate 5 structured configurations under strict 4-split nested GroupKFold on the 110 clean pro attempts:
+Evaluate structured configurations under strict 4-split nested GroupKFold on the 110 clean pro attempts:
 1. **Config 0:** Current B2 Hierarchical Baseline (28.04% Macro F1)
 2. **Config 1:** B2 + Tier 1 Physics Invariant Features
 3. **Config 2:** Multi-Task Factorized Component Heads
 4. **Config 3:** Multi-Task Heads + Physical Consistency Constraints
 5. **Config 4:** Full Physics-Informed Kinematic Engine
+
+---
+
+## 13. Phase 3.5.8 — Physics-First Temporal Recognition Engine
+
+### 13.1 Motivation & Architectural Paradigm Shift
+Empirical findings in Phase 3.5.7 revealed that adding more features to an 72D flat vector or fusing probabilistic heads with strict Bayesian multiplication yields diminishing returns (Flat XGBoost 13.35%, B3 Product Bayes 17.44%), while physical decomposition in B2 proved superior (28.04% Macro F1, 52.73% Top-2). However, planar board rotation (Pop Shove-it vs. FS Shove-it) remained unresolved (0% F1 in B2) because monocular projection creates 2D directional ambiguity.
+
+Phase 3.5.8 replaces high-dimensional direct classification with a **physics-first, phase-aligned temporal recognition architecture**:
+
+$$\boxed{
+\text{Trajectory}
+\longrightarrow
+\text{Physical State}
+\longrightarrow
+\text{Physics Candidate Routing}
+\longrightarrow
+\text{Temporal Signature Matching (DTW)}
+\longrightarrow
+\text{Small ML Resolver}
+}$$
+
+- **Physics determines what motions are physically plausible.**
+- **Temporal trajectory matching determines which possible trick the attempt's kinematic shape most closely follows.**
+- **Lightweight ML resolves residual ambiguities within the routed candidate set.**
+
+---
+
+### 13.2 System Layers
+
+#### Layer A — Compact Deterministic Physical State Consensus
+Derive a compact physical state from multi-signal evidence rather than a single brittle threshold:
+1. **Body State ($S_{\text{body}} \in \{-1, 0, +1\}$):**
+   - Detect $180^\circ$ body rotation using ankle/hip/shoulder spatial inversion and integrated body yaw.
+   - `-1`: Backside rotation; `0`: No body spin; `+1`: Frontside rotation.
+2. **Board State ($S_{\text{board}} \in \{-180, 0, +180, \pm 360\}$):**
+   - Multi-signal consensus combining:
+     - Nose-tail inversion invariant $C_{\text{inv}}$
+     - Temporal foreshortening trough depth and symmetry
+     - Accumulated board yaw and rotational velocity
+     - Board-axis recovery profile
+3. **Flip State ($S_{\text{flip}} \in \{-1, 0, +1\}$):**
+   - Transverse foot flick velocity $\dot y_{\text{front}}$, board aspect-ratio oscillation, foot-board relative clearance, and flip onset timing.
+   - `-1`: Kickflip flick; `0`: No flip; `+1`: Heelflip flick.
+
+$$\text{Physical State Vector} = [S_{\text{body}}, S_{\text{board}}, S_{\text{flip}}]$$
+
+```text
+Ollie       = [0,    0,   0]
+BS180       = [-1, -180,  0]
+FS180       = [+1, +180,  0]
+Pop Shove   = [0,  -180,  0]
+FS Shove    = [0,  +180,  0]
+Kickflip    = [0,    0,  -1]
+Heelflip    = [0,    0,  +1]
+Varial      = [0,  -180, -1]
+360 Flip    = [0,  -360, -1]
+```
+
+#### Layer B — Signed Scoop Sweep Momentum ($\tau_{\text{scoop}}$)
+To definitively disambiguate **Pop Shove-it vs. FS Shove-it**, compute the signed planar sweep momentum of the tail relative to the board centroid / body coordinate frame:
+
+$$\tau_{\text{scoop}} = \sum_{t=t_{\text{pop}}}^{t_{\text{apex}}} \left( \vec r_{\text{tail}}(t) \times \dot{\vec r}_{\text{tail}}(t) \right)_z$$
+
+where $\vec r_{\text{tail}}(t) = P_{\text{tail}}(t) - P_{\text{centroid}}(t)$.
+- $\tau_{\text{scoop}} > 0$: Clockwise / Backside sweep (Pop Shove-it in regular stance).
+- $\tau_{\text{scoop}} < 0$: Counter-clockwise / Frontside sweep (FS Shove-it in regular stance).
+- Stance calibration: Sign convention is calibrated per regular vs. goofy skater stance to maintain rotational invariance.
+
+#### Layer C — Phase-Aligned Temporal Trajectory Normalization
+Preserve the full dynamic sequence across the flight phase without lossy aggregation:
+- Every trick flight $[t_{\text{pop}}, t_{\text{land}}]$ is resampled to a fixed temporal grid: $X(t) \in \mathbb{R}^{64 \times D}$, where $t \in [0, 63]$ ($0\% = \text{POP}$, $50\% = \text{APEX}$, $100\% = \text{LAND}$).
+- $D$ normalized physical kinematic channels:
+  1. Board yaw angle $\theta_{\text{board}}(t)$
+  2. Board angular velocity $\dot\theta_{\text{board}}(t)$
+  3. Board apparent foreshortened length $L_{\text{board}}(t) / L_0$
+  4. Body yaw angle $\theta_{\text{body}}(t)$
+  5. Body angular velocity $\dot\theta_{\text{body}}(t)$
+  6. Relative body-board yaw $\theta_{\text{rel}}(t) = \theta_{\text{board}}(t) - \theta_{\text{body}}(t)$
+  7. Front foot-to-board distance $d_{\text{front,board}}(t)$
+  8. Back foot-to-board distance $d_{\text{back,board}}(t)$
+  9. Vertical board flight trajectory $y_{\text{board}}(t) - y_{\text{pop}}$
+  10. Skater CoM to board vertical clearance $y_{\text{CoM}}(t) - y_{\text{board}}(t)$
+
+#### Layer D — Physics-Guided Temporal Prototypes & DTW
+- **Training-Fold Only Prototypes:** For each canonical trick $T \in \{1 \dots 9\}$, compute a class physical prototype trajectory $P_T \in \mathbb{R}^{64 \times D}$ exclusively from training-fold skaters:
+  $$P_T(t) = \frac{1}{|S_T|} \sum_{i \in S_T} X_i(t)$$
+- Measure the temporal alignment cost between an unseen test attempt $X$ and each class prototype $P_T$ using Dynamic Time Warping (DTW) with a Sakoe-Chiba band:
+  $$D_T = \text{DTW}(X, P_T)$$
+
+#### Layer E — Continuous Soft Physics Contradiction Cost
+Rather than hard, brittle Bayesian masking, compute a smooth contradiction penalty $E(T \mid X) \ge 0$:
+- Evaluates kinematic violations (e.g. candidate is Ollie but $|\Delta\theta_{\text{board}}| > 120^\circ$ or $C_{\text{inv}} < -0.3$).
+- Pop Shove-it with large body rotation incurs high $E(T \mid X)$, whereas BS180 does not.
+- Prevents tracking glitches on single frames from permanently zeroing out the true class.
+
+#### Layer F — Hybrid Scoring & Candidate Routing
+1. **Candidate Routing:** Compact physical state $S$ identifies a small candidate set $\mathcal{C} \subset \{1 \dots 9\}$ (typically 2 to 4 tricks) based on physical plausibility.
+2. **Hybrid Trick Scoring:** For candidate $T \in \mathcal{C}$:
+   $$\text{Score}(T) = w_1 D_T^{\text{temporal}} + w_2 E(T \mid X)^{\text{physics}} + w_3 D_T^{\text{rotation}} + w_4 D_T^{\text{foot}} - w_5 \log P_{\text{ML}}(T)$$
+   The candidate with the lowest cost wins: $\hat T = \arg\min_{T \in \mathcal{C}} \text{Score}(T)$.
+
+---
+
+### 13.3 Experimental Matrix (Phase 3.5.8)
+
+All configurations evaluated under the identical strict 4-split nested GroupKFold by skater across 110 clean pro attempts:
+
+| Config | Model System | Research Question Addressed |
+|---|---|---|
+| **C0** | Current B2 Baseline | Reference performance (Macro F1 = 28.04%, Top-2 = 52.73%) |
+| **C1** | Compact Physics State Rule | Are deterministic physical invariants alone sufficient? |
+| **C2** | Physics Routing + Signed Scoop | Can signed scoop sweep $\tau_{\text{scoop}}$ recover Pop Shove & FS Shove? |
+| **C3** | Temporal Prototypes + DTW | Does phase-aligned temporal motion shape generalize across unseen skaters? |
+| **C4** | Physics + Temporal Prototypes | Does combining physical invariants with DTW matching beat pure DTW? |
+| **C5** | Full Hybrid (Physics + DTW + Small ML) | Does lightweight ML ambiguity resolution maximize Macro F1 & MinClass F1? |
+
+### 13.4 Strict Success Criteria
+1. **Shove-it Recovery:** Pop Shove-it and FS Shove-it F1 must both become non-zero without degrading Varial / Hardflip (53.7%) and 360 Flip (50.0%).
+2. **Macro F1 Improvement:** Statistically superior or competitive with B2 baseline across unseen skaters.
+3. **MinClass F1:** Exceed 0.00% across all 9 canonical trick classes.
+
 
