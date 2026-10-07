@@ -1,0 +1,16 @@
+clip_id,filename,filepath,skater_cluster,viewpoint,setting,resolution,fps,duration_sec,outcome
+sbml_o01,Ollie1.mov,data/raw_videos/skateboard_ml/Ollie/Ollie1.mov,sbml_skater_tarmac,lateral_wide,open_parking_lot,1920x1080,29.98,2.37,land
+sbml_o02,Ollie6.mov,data/raw_videos/skateboard_ml/Ollie/Ollie6.mov,sbml_skater_redcourt,oblique_wide,painted_sport_court,1280x720,29.91,1.97,land
+sbml_o03,Ollie7.mov,data/raw_videos/skateboard_ml/Ollie/Ollie7.mov,sbml_skater_industrial,frontal_oblique,industrial_pallet_yard,1280x720,29.98,2.10,land
+sbml_o04,Ollie8.mov,data/raw_videos/skateboard_ml/Ollie/Ollie8.mov,sbml_skater_industrial,frontal_wide,industrial_pallet_yard,1280x720,29.98,2.33,land
+sbml_o05,Ollie11.mov,data/raw_videos/skateboard_ml/Ollie/Ollie11.mov,sbml_skater_palmtree,oblique_ground,concrete_skatepark,1280x720,29.76,1.92,land
+sbml_o06,Ollie14.mov,data/raw_videos/skateboard_ml/Ollie/Ollie14.mov,sbml_skater_palmtree,frontal_ground,concrete_skatepark,1280x720,29.98,2.20,land
+sbml_o07,Ollie18.mov,data/raw_videos/skateboard_ml/Ollie/Ollie18.mov,sbml_skater_roadline,lateral_tracking,painted_asphalt_road,1280x720,30.20,2.22,land
+sbml_o08,Ollie19.mov,data/raw_videos/skateboard_ml/Ollie/Ollie19.mov,sbml_skater_roadline,lateral_tracking,painted_asphalt_road,1280x720,30.09,3.72,land
+sbml_o09,Ollie20.mov,data/raw_videos/skateboard_ml/Ollie/Ollie20.mov,sbml_skater_parkdrop,frontal_jump,outdoor_park_drop,1920x1080,30.00,2.50,land
+sbml_o10,Ollie65.mov,data/raw_videos/skateboard_ml/Ollie/Ollie65.mov,sbml_skater_court,lateral_ground,asphalt_basketball_court,1920x1080,30.24,2.12,land
+sbml_o11,Ollie70.mov,data/raw_videos/skateboard_ml/Ollie/Ollie70.mov,sbml_skater_court,lateral_wide,asphalt_basketball_court,1920x1080,29.98,2.33,land
+sbml_o12,Ollie80.mov,data/raw_videos/skateboard_ml/Ollie/Ollie80.mov,sbml_skater_court,oblique_distant,asphalt_basketball_court,1920x1080,30.13,1.89,land
+sbml_o13,Ollie90.mov,data/raw_videos/skateboard_ml/Ollie/Ollie90.mov,sbml_skater_court,lateral_follow,asphalt_basketball_court,1920x1080,30.44,1.71,land
+sbml_o14,Ollie105.mov,data/raw_videos/skateboard_ml/Ollie/Ollie105.mov,sbml_skater_camo,oblique_medium,skatepark_plaza,1920x1080,30.15,3.42,land
+sbml_o15,Ollie107.mov,data/raw_videos/skateboard_ml/Ollie/Ollie107.mov,sbml_skater_camo,oblique_stairs,skatepark_plaza,1920x1080,30.71,1.63,land
