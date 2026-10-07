@@ -319,13 +319,14 @@ class PhysicsTemporalHybridClassifier:
             test_skaters = groups.iloc[test_idx].unique().tolist()
 
             # 1. Build class temporal prototypes from TRAINING FOLD ONLY (strictly leakage-free)
+            clean_traj = np.nan_to_num(trajectories, nan=0.0, posinf=0.0, neginf=0.0)
             prototypes = {}
             for c_name in self.classes_:
                 mask = (y_vals[train_idx] == c_name)
                 if np.sum(mask) > 0:
-                    prototypes[c_name] = np.mean(trajectories[train_idx][mask], axis=0)
+                    prototypes[c_name] = np.mean(clean_traj[train_idx][mask], axis=0)
                 else:
-                    prototypes[c_name] = np.mean(trajectories[train_idx], axis=0)
+                    prototypes[c_name] = np.mean(clean_traj[train_idx], axis=0)
 
             # 2. Train Stage 1: Flip vs Flat Detector
             X_f_tr, y_f_tr = augment_mirror(X[train_idx], is_flip_all[train_idx])
@@ -368,11 +369,12 @@ class PhysicsTemporalHybridClassifier:
             for i_local, i_global in enumerate(test_idx):
                 row = X_df.iloc[i_global]
                 x_sample = X[i_global:i_global + 1]
-                x_traj = trajectories[i_global]
+                x_traj = np.nan_to_num(trajectories[i_global], nan=0.0, posinf=0.0, neginf=0.0)
 
                 tau = float(row.get('calib_tau_scoop', 0.0))
                 c_inv = float(row.get('c_inv_cosine', 1.0))
-                trough = float(row.get('foreshortening_trough_depth', 0.0))
+                trough = float(row.get('trough_depth', 0.0))
+                min_len = float(row.get('min_norm_length', 1.0))
                 d_board = float(row.get('canonical_delta_theta_net', 0.0))
                 d_body = float(row.get('delta_theta_body', 0.0))
 
@@ -397,7 +399,7 @@ class PhysicsTemporalHybridClassifier:
 
                 else:
                     # Straight Flat Specialist: Physics Candidate Routing + Signed Scoop tau + DTW
-                    has_shuv = (c_inv < 0.20) or (trough > 0.35) or (abs(d_board) > 80.0)
+                    has_shuv = (c_inv < 0.20) or (trough > 0.35) or (min_len < 0.65) or (abs(d_board) > 80.0)
                     if not has_shuv:
                         pred_name = 'Ollie'
                         fold_probs[i_local, self.classes_.index('Ollie')] = 1.0 - prob_flip_test[i_local]
@@ -405,10 +407,10 @@ class PhysicsTemporalHybridClassifier:
                         d_pop = dtw_dist(x_traj, prototypes['Pop Shove-it'])
                         d_fs = dtw_dist(x_traj, prototypes['Frontside Shove-it'])
                         # Signed scoop sweep momentum bias
-                        if tau < -500.0:
-                            d_pop -= 0.50
-                        elif tau > 500.0:
-                            d_fs -= 0.50
+                        if tau < -100.0:
+                            d_pop -= 0.35
+                        elif tau > 100.0:
+                            d_fs -= 0.35
 
                         if d_pop <= d_fs:
                             pred_name = 'Pop Shove-it'
@@ -546,7 +548,7 @@ def evaluate_phase358_matrix(
 
             # --- C2: Physics Routing + Signed Scoop ---
             has_body_spin = abs(float(row.get('delta_theta_body', 0.0))) > 45.0
-            has_shuv = (float(row.get('c_inv_cosine', 1.0)) < 0.2) or (float(row.get('foreshortening_trough_depth', 0.0)) > 0.40)
+            has_shuv = (float(row.get('c_inv_cosine', 1.0)) < 0.2) or (float(row.get('trough_depth', 0.0)) > 0.35) or (float(row.get('min_norm_length', 1.0)) < 0.65)
             has_flip = float(row.get('min_aspect', 1.0)) < 0.65 or float(row.get('flick_vel_mag', 0.0)) > 300.0
 
             c2_costs = phys_costs.copy()

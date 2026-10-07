@@ -1,0 +1,672 @@
+{
+  "baseline_b4_frozen": {
+    "experiment_name": "Frozen Baseline B4 (110 Clips / 14 Skaters)",
+    "macro_f1": 28.08,
+    "top1_accuracy": 30.0,
+    "top2_accuracy": 46.36,
+    "min_class_f1": 9.09,
+    "per_class_f1": {
+      "360 Flip": 50.0,
+      "Backside 180": 43.48,
+      "Frontside 180": 28.57,
+      "Frontside Shove-it": 26.67,
+      "Heelflip": 18.18,
+      "Kickflip": 23.53,
+      "Ollie": 9.09,
+      "Pop Shove-it": 12.5,
+      "Varial / Hardflip": 53.66
+    }
+  },
+  "experiments": {
+    "Exp1_Data_Expansion": {
+      "experiment_name": "B4 Baseline on Expanded Dataset (125 Clips)",
+      "macro_f1": 20.18,
+      "top1_accuracy": 22.4,
+      "top2_accuracy": 38.4,
+      "min_class_f1": 8.0,
+      "per_class_f1": {
+        "360 Flip": 18.18,
+        "Backside 180": 22.22,
+        "Frontside 180": 19.05,
+        "Frontside Shove-it": 15.38,
+        "Heelflip": 8.33,
+        "Kickflip": 22.22,
+        "Ollie": 19.35,
+        "Pop Shove-it": 8.0,
+        "Varial / Hardflip": 48.89
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0,
+          1,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          0,
+          1,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          6,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          0,
+          2,
+          2,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          1,
+          3,
+          1,
+          1,
+          3,
+          5,
+          6
+        ],
+        [
+          4,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          1,
+          0,
+          2,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ]
+    },
+    "Exp2_Ollie_Gate": {
+      "experiment_name": "B4 + Calibrated Ollie Physical Candidate Gate",
+      "macro_f1": 20.18,
+      "top1_accuracy": 22.4,
+      "top2_accuracy": 38.4,
+      "min_class_f1": 8.0,
+      "per_class_f1": {
+        "360 Flip": 18.18,
+        "Backside 180": 22.22,
+        "Frontside 180": 19.05,
+        "Frontside Shove-it": 15.38,
+        "Heelflip": 8.33,
+        "Kickflip": 22.22,
+        "Ollie": 19.35,
+        "Pop Shove-it": 8.0,
+        "Varial / Hardflip": 48.89
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0,
+          1,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          0,
+          1,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          6,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          0,
+          2,
+          2,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          1,
+          3,
+          1,
+          1,
+          3,
+          5,
+          6
+        ],
+        [
+          4,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          1,
+          0,
+          2,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ]
+    },
+    "Exp3_Stance_Norm": {
+      "experiment_name": "B4 + Stance Sign Normalization",
+      "macro_f1": 20.16,
+      "top1_accuracy": 22.4,
+      "top2_accuracy": 38.4,
+      "min_class_f1": 8.33,
+      "per_class_f1": {
+        "360 Flip": 18.18,
+        "Backside 180": 22.22,
+        "Frontside 180": 19.05,
+        "Frontside Shove-it": 14.81,
+        "Heelflip": 8.33,
+        "Kickflip": 22.22,
+        "Ollie": 19.35,
+        "Pop Shove-it": 8.33,
+        "Varial / Hardflip": 48.89
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0,
+          1,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          0,
+          2,
+          2,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          3,
+          6,
+          6
+        ],
+        [
+          4,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          1,
+          0,
+          2,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ]
+    },
+    "Exp4_Scoop_Energy": {
+      "experiment_name": "B4 + Transient Scoop Energy Feature",
+      "macro_f1": 20.18,
+      "top1_accuracy": 22.4,
+      "top2_accuracy": 38.4,
+      "min_class_f1": 8.0,
+      "per_class_f1": {
+        "360 Flip": 18.18,
+        "Backside 180": 22.22,
+        "Frontside 180": 19.05,
+        "Frontside Shove-it": 15.38,
+        "Heelflip": 8.33,
+        "Kickflip": 22.22,
+        "Ollie": 19.35,
+        "Pop Shove-it": 8.0,
+        "Varial / Hardflip": 48.89
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0,
+          1,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          0,
+          1,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          6,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          0,
+          2,
+          2,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          1,
+          3,
+          1,
+          1,
+          3,
+          5,
+          6
+        ],
+        [
+          4,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          1,
+          0,
+          2,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ]
+    },
+    "Exp5_Full_Phase359": {
+      "experiment_name": "B4 + ALL Integrated Phase 3.5.9 Mechanisms",
+      "macro_f1": 20.16,
+      "top1_accuracy": 22.4,
+      "top2_accuracy": 38.4,
+      "min_class_f1": 8.33,
+      "per_class_f1": {
+        "360 Flip": 18.18,
+        "Backside 180": 22.22,
+        "Frontside 180": 19.05,
+        "Frontside Shove-it": 14.81,
+        "Heelflip": 8.33,
+        "Kickflip": 22.22,
+        "Ollie": 19.35,
+        "Pop Shove-it": 8.33,
+        "Varial / Hardflip": 48.89
+      },
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0,
+          1,
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          2,
+          2,
+          2,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          1,
+          2,
+          1,
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          0,
+          2,
+          2,
+          1,
+          4
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          2,
+          1,
+          3,
+          3,
+          0,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          3,
+          6,
+          6
+        ],
+        [
+          4,
+          0,
+          0,
+          4,
+          2,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          3,
+          1,
+          0,
+          2,
+          11
+        ]
+      ],
+      "classes": [
+        "360 Flip",
+        "Backside 180",
+        "Frontside 180",
+        "Frontside Shove-it",
+        "Heelflip",
+        "Kickflip",
+        "Ollie",
+        "Pop Shove-it",
+        "Varial / Hardflip"
+      ]
+    }
+  }
+}
