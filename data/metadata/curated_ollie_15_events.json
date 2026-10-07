@@ -1,0 +1,107 @@
+{
+  "sbml_o01": {
+    "t_pop": 49,
+    "t_apex": 65,
+    "t_land": 67,
+    "flight_ms": 600.400266844563,
+    "skater_id": "sbml_skater_tarmac"
+  },
+  "sbml_o02": {
+    "t_pop": 10,
+    "t_apex": 15,
+    "t_land": 21,
+    "flight_ms": 367.76997659645605,
+    "skater_id": "sbml_skater_redcourt"
+  },
+  "sbml_o03": {
+    "t_pop": 3,
+    "t_apex": 10,
+    "t_land": 18,
+    "flight_ms": 500.3335557038026,
+    "skater_id": "sbml_skater_industrial"
+  },
+  "sbml_o04": {
+    "t_pop": 42,
+    "t_apex": 71,
+    "t_land": 95,
+    "flight_ms": 1767.8452301534355,
+    "skater_id": "sbml_skater_industrial"
+  },
+  "sbml_o05": {
+    "t_pop": 28,
+    "t_apex": 42,
+    "t_land": 48,
+    "flight_ms": 672.0430107526881,
+    "skater_id": "sbml_skater_palmtree"
+  },
+  "sbml_o06": {
+    "t_pop": 6,
+    "t_apex": 15,
+    "t_land": 20,
+    "flight_ms": 466.977985323549,
+    "skater_id": "sbml_skater_palmtree"
+  },
+  "sbml_o07": {
+    "t_pop": 20,
+    "t_apex": 29,
+    "t_land": 47,
+    "flight_ms": 894.0397350993378,
+    "skater_id": "sbml_skater_roadline"
+  },
+  "sbml_o08": {
+    "t_pop": 14,
+    "t_apex": 53,
+    "t_land": 76,
+    "flight_ms": 2060.485211033566,
+    "skater_id": "sbml_skater_roadline"
+  },
+  "sbml_o09": {
+    "t_pop": 44,
+    "t_apex": 75,
+    "t_land": 100,
+    "flight_ms": 1866.6666666666667,
+    "skater_id": "sbml_skater_parkdrop"
+  },
+  "sbml_o10": {
+    "t_pop": 13,
+    "t_apex": 48,
+    "t_land": 54,
+    "flight_ms": 1355.8201058201057,
+    "skater_id": "sbml_skater_court"
+  },
+  "sbml_o11": {
+    "t_pop": 23,
+    "t_apex": 29,
+    "t_land": 34,
+    "flight_ms": 366.91127418278853,
+    "skater_id": "sbml_skater_court"
+  },
+  "sbml_o12": {
+    "t_pop": 9,
+    "t_apex": 16,
+    "t_land": 33,
+    "flight_ms": 796.5482907401262,
+    "skater_id": "sbml_skater_court"
+  },
+  "sbml_o13": {
+    "t_pop": 13,
+    "t_apex": 19,
+    "t_land": 26,
+    "flight_ms": 427.06964520367933,
+    "skater_id": "sbml_skater_court"
+  },
+  "sbml_o14": {
+    "t_pop": 28,
+    "t_apex": 34,
+    "t_land": 40,
+    "flight_ms": 398.00995024875624,
+    "skater_id": "sbml_skater_camo"
+  },
+  "sbml_o15": {
+    "t_pop": 21,
+    "t_apex": 28,
+    "t_land": 34,
+    "flight_ms": 423.3148811462064,
+    "skater_id": "sbml_skater_camo"
+  }
+}
