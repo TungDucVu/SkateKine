@@ -467,223 +467,143 @@ All configurations evaluated under the identical strict 4-split nested GroupKFol
 
 ---
 
-## 14. Phase 3.5.9 — Cross-Skater Generalization + Kinematic State Routing
+## 14. Phase 3.5.9 — Paper-Informed Cross-Skater Recognition
 
-### 14.1 Objective & Paradigm Pivot
+### 14.1 Objective & Baseline Freeze
 Shift primary research focus from:
 > **"Can we squeeze more F1 out of B4?"**
 
 to:
 > **"Can we build a recognition system that actually generalizes to unseen skaters?"**
 
-The empirical Phase 3.5.8 benchmark established the **frozen B4 baseline**:
-- **Macro F1:** 28.08%
-- **Top-1 Accuracy:** 30.00%
-- **Top-2 Accuracy:** 46.36%
-- **Min-Class F1:** 9.09% (All 9 canonical classes non-zero; Pop Shove recovered to 12.5%, FS Shove recovered to 26.7%)
+The empirical Phase 3.5.8 benchmark establishes the **frozen B4 baseline**:
+- **Macro F1:** **28.08%**
+- **Top-1 Accuracy:** **30.00%**
+- **Top-2 Accuracy:** **46.36%**
+- **Min-Class F1:** **9.09%** (All 9 canonical classes non-zero; Pop Shove: 12.5%, FS Shove: 26.7%)
+
+The goal of Phase 3.5.9 is **not** to blindly chase paper-reported numbers on toy datasets, but to extract the physical and biomechanical mechanisms proven in the latest literature and validate them under our strict unseen-skater benchmark.
 
 ---
 
-### 14.2 Phase 3.5.9A — Fix the Data Bottleneck First (Highest Priority)
-Cross-skater generalization is structurally bounded by extreme skater concentration in canonical holdouts:
+### 14.2 Phase 3.5.9A — Data Expansion (Audited Ollie Curation)
 
-| Canonical Trick | Current Dataset Status | Target Representation |
-|---|---|---|
-| **Ollie** | 2 skaters (monopolized) | $\ge 5\text{--}6$ independent skaters |
-| **Backside 180** | 3 skaters | $\ge 5\text{--}6$ independent skaters |
-| **Frontside 180** | 4 skaters | $\ge 5\text{--}6$ independent skaters |
-| **Pop Shove-it** | 3 skaters | $\ge 5\text{--}6$ independent skaters |
-| **Frontside Shove-it** | 4 skaters (limited diversity) | $\ge 5\text{--}6$ independent skaters |
+#### The Dataset Bottleneck & SkateboardML Reality
+The newly ingested `LightningDrop/SkateboardML` dataset in [`data/raw_videos/skateboard_ml/`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/raw_videos/skateboard_ml/) contains 222 clips (108 Ollie, 114 Kickflip). However, an audit revealed a crucial risk:
+- The raw clips lack skater metadata and currently map to only aggregate unknown placeholders.
+- **Rule:** **DO NOT dump all 222 clips blindly into training.** Doing so would severely compromise cross-skater evaluation integrity.
 
-#### Ingestion Protocol & Quality Gate
-- Ingest approximately **15–20 visually verified clips**, strictly prioritizing **new unseen skaters** (zero additional clips from already over-represented skaters like Player A).
-- **Mandatory Clip Verification Checklist:**
-  1. Manual ground-truth trick verification.
-  2. Frame-accurate boundary marking: `gt_pop`, `gt_apex`, `gt_catch`, `gt_land`.
-  3. Camera viewpoint characterization (lateral / oblique / frontal).
-  4. Outcome verification (clean landed vs. bail rollout).
-  5. Deterministic ingestion through Phase 1 tracking and Phase 2 event segmentation pipelines.
+#### Targeted Ingestion Strategy:
+- **Immediate Target:** Curate **15 high-quality Ollie clips** (expanding Ollie from 8 clips / 2 skaters $\to$ $\approx 23+$ clips).
+- Kickflip already has 13 clips across 7 pro skaters in BATB/Archive, so its priority is secondary.
+- **Audit Requirement:** Inspect each candidate Ollie video for distinct visual features (background, camera angle, setup, clothing, stance). We **cannot invent fake skater IDs**; any clusters showing the same individual must share a skater ID to preserve strict GroupKFold anti-leakage guarantees.
+- If the curated clips turn out to derive from essentially 1–2 sources, they cannot serve as cross-skater evidence, and genuine external clips must be sourced.
 
 ---
 
-### 14.3 Phase 3.5.9B — Establish the Ollie / Shove-it Physical Boundary
-Evaluate a crisp physical foreshortening gate before complex downstream matching:
+### 14.3 Phase 3.5.9B — Fix the "Ollie Black Hole" (Physical Candidate Gate)
+
+#### Motivation from Hollaus et al. (IEEE 2023)
+The Hollaus et al. IMU findings confirm our Phase 3.5.8 empirical observation:
+> **Ollie is the default fallback class when the classifier lacks confidence in rotational or flip components.**
+
+Because an Ollie’s pop-and-slide mechanics form the foundational sub-phase of all skateboarding tricks, weak rotation signals cause the classifier to collapse into Ollie.
+
+#### Physical Candidate Gate Formulation:
+Evaluate a deterministic candidate gate prior to probabilistic scoring:
+If kinematic tracking observes evidence of non-linear motion:
+1. Significant board foreshortening: $\min_t (L_{\text{board}}(t) / L_0) < \tau_{\text{len}}$
+2. Significant body yaw rotation: $|\Delta \psi_{\text{body}}| > \tau_{\text{yaw}}$
+3. Flip cycle oscillation: $E_{\text{flip}} > \tau_{\text{flip}}$
+4. Strong transient scoop jerk: $E_{\text{scoop}} > \tau_{\text{scoop}}$
+
+$$\Downarrow$$
+**Ollie is strictly removed from the candidate pool.**
+
+> **Calibration Rule:** Do **not** assume fixed heuristic thresholds (`0.65`, `40°`, `0.35`, `0.25`) are universal. These thresholds must be calibrated and frozen strictly on training folds within each cross-validation split.
+
+---
+
+### 14.4 Phase 3.5.9C — Stance Normalization (BS180 vs. FS180 Inversion Fix)
+
+#### Biomechanical Symmetry
+As proven by Hollaus et al., a Goofy skater performing a Backside 180 exhibits angular velocity kinematics symmetric/identical in absolute sign to a Regular skater performing a Frontside 180 ($-\omega$ vs. $+\omega$). This coordinate mismatch is a primary driver of BS180 vs. FS180 confusion.
+
+#### Canonical Coordinate Transformation:
+Transform all directional kinematic rotation signals into stance-normalized canonical space:
+$$\theta_{\text{norm}}(t) = \text{sign}(\text{stance}) \cdot \theta(t)$$
+
+Applied to:
+- Body yaw trajectory: $\psi_{\text{body, norm}}(t) = s \cdot \psi_{\text{body}}(t)$
+- Board yaw trajectory: $\psi_{\text{board, norm}}(t) = s \cdot \psi_{\text{board}}(t)$
+- Planar scoop momentum: $p_{\text{scoop, norm}} = s \cdot p_{\text{scoop}}$
+
+where:
+$$s = \begin{cases} +1 & \text{if Regular} \\ -1 & \text{if Goofy} \end{cases}$$
+
+This ensures that BS180 consistently maps to positive rotation ($+180^\circ$) and FS180 consistently maps to negative rotation ($-180^\circ$), regardless of skater stance.
+
+---
+
+### 14.5 Phase 3.5.9D — Add Transient Scoop Energy
+
+#### Motivation from Abdullah et al. (PeerJ 2021)
+Abdullah et al. demonstrated that Continuous Wavelet Transform (CWT) scalograms easily separate Pop Shove-it and Nollie FS Shuvit from Ollies due to transient high-frequency energy bursts during the scoop/snap phase ($0.0\text{--}0.2$s post-pop).
+
+#### Visual Deck Kinematics Formulation:
+Borrowing this core insight for monocular visual tracking, we compute the transient energy of apparent board length velocity during the pop-to-apex window:
+
+$$E_{\text{scoop}} = \frac{1}{t_{\text{apex}} - t_{\text{pop}}} \sum_{t=t_{\text{pop}}}^{t_{\text{apex}}} \left( \frac{d}{dt} \frac{L_{\text{board}}(t)}{L_0} \right)^2$$
+
+- **Physical Rationale:** Pure vertical pops (Ollie) exhibit a smooth, near-zero derivative in board aspect ratio during early flight. Planar rotations (Pop Shove-it, FS Shove-it) produce rapid high-frequency foreshortening transients as the tail sweeps outward.
+- This transient energy directly discriminates Ollie from Shove-its even when full $180^\circ$ tracking is visually noisy.
+
+---
+
+### 14.6 Phase 3.5.9E — Controlled Benchmarking Progression (Same Nested GroupKFold)
+
+To prevent confounding, we avoid combining mechanisms blindly. We execute a rigorous ablation tree where each mechanism is isolated under the **exact same 4-split nested GroupKFold by skater**:
 
 ```text
-if min(L_board(t) / L_0) > 0.65:
-    prohibit Shove-it candidates (enforce non-rotating planar candidate set)
+B4 Baseline (Frozen: Macro F1 = 28.08%, Min F1 = 9.09%)
+ │
+ ├── Experiment 1: B4 + 15 Audited Ollie Clips (Data expansion impact)
+ │
+ ├── Experiment 2: B4 + Ollie Physical Gate (Hollaus fallback guard)
+ │
+ ├── Experiment 3: B4 + Stance Normalization (BS180 / FS180 sign alignment)
+ │
+ ├── Experiment 4: B4 + Scoop Energy Feature (Abdullah transient metric)
+ │
+ └── Experiment 5: B4 + ALL (Integrated Phase 3.5.9 Engine)
 ```
 
-**Interpretation:** If there is insufficient deck foreshortening or yaw inversion evidence during flight, the trick cannot physically be a Pop Shove-it or FS Shove-it.
-- **Evaluation Criteria:** Monitor Ollie F1, Pop Shove-it F1, FS Shove-it F1, Macro F1, Top-2 accuracy, and confusion matrix.
-- If the hard constraint causes brittle clipping under oblique camera angles, soften to an adaptive continuous penalty.
+#### Monitored Evaluation Metrics:
+1. **Unseen-Skater Macro F1** (Primary metric across outer test folds)
+2. **Top-1 & Top-2 Accuracy**
+3. **Min-Class F1** (Must remain $>0.00\%$ across all 9 classes)
+4. **Target Sub-metrics:**
+   - Ollie F1 & Kickflip F1
+   - BS180 F1 & FS180 F1 (Measuring stance normalization impact)
+   - Pop Shove-it F1 & FS Shove-it F1 (Measuring scoop energy & gate impact)
+5. **Full Confusion Matrix**
 
 ---
 
-### 14.4 Phase 3.5.9C — Build the Kinematic Tokenizer
-Convert noisy, high-dimensional continuous trajectories into a compact, robust physical state token representation with continuous confidence scores:
+### 14.7 Phase 3.5.9 Success Criterion
 
-```text
-SNAP
-├── NEUTRAL (conf)
-├── BS_SCOOP (conf)
-└── FS_SWEEP (conf)
-
-FLICK
-├── NONE (conf)
-├── KICK_FLICK (conf)
-└── HEEL_FLICK (conf)
-
-BOARD
-├── PRESERVED (conf)
-├── INVERTED (conf)
-└── FULL_SPIN (conf)
-
-BODY
-├── STATIONARY (conf)
-├── BS180 (conf)
-└── FS180 (conf)
-
-FORESHORTENING
-├── NONE (conf)
-├── MODERATE (conf)
-└── STRONG (conf)
-```
-
-*Example Token Output:*
-```text
-BS_SCOOP        : 0.84
-FORESHORTENING  : 0.76
-INVERSION       : 0.11
-BS180           : 0.06
-```
-
----
-
-### 14.5 Phase 3.5.9D — Hierarchical Candidate Routing
-Route attempts through physically decoupled candidate families before ML resolution:
-
-```text
-                    Kinematic State Vector
-                              │
-              ┌───────────────┼───────────────┐
-              ↓               ↓               ↓
-           Body Yaw       Board Flip      No Major Rotation
-              │               │               │
-            180s            Flips        Ollie / Shove
-              │               │               │
-         FS180 / BS180   Kickflip / Heel  Pop Shov / FS Shov / Ollie
-```
-
-The ML model operates strictly as a **fine-grained ambiguity resolver** within the routed candidate set, rather than learning global cross-family boundaries from scratch.
-
----
-
-### 14.6 Phase 3.5.9E — Multi-Template Matching ($K=2$ Medoid Prototypes)
-Address skater style variation by replacing the single mean prototype with $K=2$ exemplar medoid templates per class (computed strictly from training skaters per fold):
-
-```text
-Pop Shove-it
-    ├── Prototype A: Compact snappy pop style
-    └── Prototype B: Extended high-clearance pop style
-```
-
-Temporal distance scoring:
-$$D(X, \text{Class}) = \min \left( \text{DTW}(X, P_{T, A}), \text{DTW}(X, P_{T, B}) \right)$$
-
----
-
-### 14.7 Phase 3.5.9F — Experimental Comparison Progression
-
-All systems evaluated under the exact 4-split nested GroupKFold by skater:
-1. **B4 Baseline:** Reference frozen system (Macro F1 = 28.08%, Top-1 = 30.00%).
-2. **B4 + Ollie / Shove Boundary:** Testing the foreshortening threshold rule.
-3. **B4 + Kinematic Tokens:** Discrete confidence token representation.
-4. **B4 + Multi-Template Prototypes:** $K=2$ medoid temporal templates.
-5. **Full Phase 3.5.9 System:** Tokens + Hierarchical Routing + $K=2$ Prototypes + ML Ambiguity Resolver.
-
-#### Target Metrics
-- Strict unseen-skater Macro F1 (primary metric).
-- Top-1 and Top-2 accuracy.
-- Min-Class F1 across all 9 classes.
-- Ollie / Shove confusion matrix reduction.
-- Per-skater generalization variance.
-
----
-
-### 14.8 End-to-End Phase 3.5.9 Architecture
-
-```text
-                        RAW VIDEO CLIP
-                              │
-                              ▼
-                    Phase 1/2 Kinematics
-                              │
-                              ▼
-                   ┌─────────────────────┐
-                   │ Kinematic Tokenizer  │
-                   │                     │
-                   │ • Snap Momentum     │
-                   │ • Scoop Direction   │
-                   │ • Flick Velocity    │
-                   │ • Board Inversion   │
-                   │ • Body Yaw Angle    │
-                   │ • Foreshortening    │
-                   └──────────┬──────────┘
-                              │
-                              ▼
-                    Physical State Vector
-                              │
-                              ▼
-                    Candidate Trick Family
-                              │
-                   ┌──────────┴──────────┐
-                   ▼                     ▼
-            K-Medoid Templates        B4 ML
-                   │                     │
-                   └──────────┬──────────┘
-                              ▼
-                      Ambiguity Resolver
-                              │
-                              ▼
-                     Final Trick Decision
-```
-
----
-
-### 14.9 Execution Priority Order & Success Criteria
-
-1. **Expand cross-skater data** (Highest priority — 15–20 verified clips across new skaters).
-2. **Freeze B4 baseline** (28.08% Macro F1, 9.09% Min-Class F1).
-3. **Test Ollie / Shove boundary** (Foreshortening constraint experiment).
-4. **Implement kinematic tokenizer** (Continuous confidence physical tokens).
-5. **Implement hierarchical candidate routing** (Family-level decoupling).
-6. **Test $K=2$ exemplar prototypes** (Multi-medoid style alignment).
-7. **Benchmark with strict nested GroupKFold** (Zero skater leakage).
-8. **Decide on learned architecture requirements**.
-
-#### Phase 3.5.9 Success Criterion
-> **Demonstrate a meaningful improvement in unseen-skater generalization (moving Macro F1 materially above 28.08%, improving Min-Class F1, and reducing Ollie/Shove confusion) under strict skater separation.**
+> **Success is defined as: Demonstrating a statistically meaningful improvement in unseen-skater Macro F1 while simultaneously reducing Ollie/Shove-it and BS180/FS180 confusion, without sacrificing the classes B4 already handles well (e.g., Varial Kickflip at 53.7%, 360 Flip at 50.0%).**
 
 *Phase 4 Cleanliness Scoring remains paused until this cross-skater generalization criterion is met.*
 
 ---
 
-### 14.10 Grounding in Academic Literature & External Data Catalog
-Detailed analysis of 3 new peer-reviewed reference papers has been incorporated into [`docs/references/PAPER_ANALYSIS_PHASE_3_5_9.md`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/docs/references/PAPER_ANALYSIS_PHASE_3_5_9.md):
+### 14.8 Immediate Action: Ollie Ingestion & Visual Diversity Audit
+1. Select the top **15 candidate Ollie clips** from [`data/raw_videos/skateboard_ml/Ollie/`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/raw_videos/skateboard_ml/Ollie/).
+2. Run visual audit across video frames (background environment, clothing, camera angle, setup) to group into genuine skater clusters.
+3. Ingest selected clips through Phase 1 (2D/3D tracking) and Phase 2 (event boundary segmentation).
+4. Register them cleanly into the experimental trajectory store before running Experiment 1.
 
-1. **Shilaskar et al. (IEEE 2023) — Video Action Recognition (Ollie & Kickflip):**
-   - Evaluated 2D CNN, ConvLSTM2D (79% acc), and MobileNet+BiLSTM (75% acc) on 222 clips (`LightningDrop/SkateboardML`).
-   - Proved that end-to-end 2D vision saturates at ~75–79% even on binary Ollie vs. Kickflip classification, proving the necessity of SkateKine's explicit kinematic tracking.
-   - **Data Integration:** All 222 clips have been organized into [`data/raw_videos/skateboard_ml/`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/raw_videos/skateboard_ml/) and cataloged in [`data/metadata/skateboard_ml_manifest.csv`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/metadata/skateboard_ml_manifest.csv) to alleviate the Phase 3.5.9A Ollie data bottleneck.
-
-2. **Hollaus et al. (IEEE 2023) — Motion-Based Trick Classification (12 Skaters, IMU):**
-   - **Ollie Fallback Black Hole:** Confirmed that Ollie is the baseline phase of all tricks; low-confidence rotational trick attempts default to Ollie. Directly motivates Phase 3.5.9B's strict physical gate $\min(L_{\text{board}}/L_0) > 0.65$ before allowing Ollie fallback.
-   - **Stance Symmetry / Inversion:** Confirmed that Goofy BS180 mirrors Regular FS180 in absolute rotation coordinates. Phase 3.5.9C adopts explicit stance sign normalization: $\Delta \psi_{\text{norm}} = \text{sign}(\text{stance}) \cdot \Delta \psi$.
-
-3. **Abdullah, Zakaria et al. (PeerJ 2021) — CWT Time-Frequency Scalograms & SVM:**
-   - Evaluated Continuous Wavelet Transform (Morlet CWT) + transfer learning feature extractors + Linear SVM (100% test accuracy).
-   - **Planar Scoop Frequency Energy:** Confirmed that Pop Shove-it and Nollie FS Shuvit produce distinct high-frequency energy bursts during the pop-to-apex scoop window, motivating the transient aspect-ratio velocity metric for Phase 3.5.9C.
 
 
 
