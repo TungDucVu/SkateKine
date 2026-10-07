@@ -667,5 +667,23 @@ All systems evaluated under the exact 4-split nested GroupKFold by skater:
 
 *Phase 4 Cleanliness Scoring remains paused until this cross-skater generalization criterion is met.*
 
+---
+
+### 14.10 Grounding in Academic Literature & External Data Catalog
+Detailed analysis of 3 new peer-reviewed reference papers has been incorporated into [`docs/references/PAPER_ANALYSIS_PHASE_3_5_9.md`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/docs/references/PAPER_ANALYSIS_PHASE_3_5_9.md):
+
+1. **Shilaskar et al. (IEEE 2023) — Video Action Recognition (Ollie & Kickflip):**
+   - Evaluated 2D CNN, ConvLSTM2D (79% acc), and MobileNet+BiLSTM (75% acc) on 222 clips (`LightningDrop/SkateboardML`).
+   - Proved that end-to-end 2D vision saturates at ~75–79% even on binary Ollie vs. Kickflip classification, proving the necessity of SkateKine's explicit kinematic tracking.
+   - **Data Integration:** All 222 clips have been organized into [`data/raw_videos/skateboard_ml/`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/raw_videos/skateboard_ml/) and cataloged in [`data/metadata/skateboard_ml_manifest.csv`](file:///d:/Future%20Career/Skateboard%20Trick%20Recognition%20&%20Cleanliness%20Scoring%20Engine/data/metadata/skateboard_ml_manifest.csv) to alleviate the Phase 3.5.9A Ollie data bottleneck.
+
+2. **Hollaus et al. (IEEE 2023) — Motion-Based Trick Classification (12 Skaters, IMU):**
+   - **Ollie Fallback Black Hole:** Confirmed that Ollie is the baseline phase of all tricks; low-confidence rotational trick attempts default to Ollie. Directly motivates Phase 3.5.9B's strict physical gate $\min(L_{\text{board}}/L_0) > 0.65$ before allowing Ollie fallback.
+   - **Stance Symmetry / Inversion:** Confirmed that Goofy BS180 mirrors Regular FS180 in absolute rotation coordinates. Phase 3.5.9C adopts explicit stance sign normalization: $\Delta \psi_{\text{norm}} = \text{sign}(\text{stance}) \cdot \Delta \psi$.
+
+3. **Abdullah, Zakaria et al. (PeerJ 2021) — CWT Time-Frequency Scalograms & SVM:**
+   - Evaluated Continuous Wavelet Transform (Morlet CWT) + transfer learning feature extractors + Linear SVM (100% test accuracy).
+   - **Planar Scoop Frequency Energy:** Confirmed that Pop Shove-it and Nollie FS Shuvit produce distinct high-frequency energy bursts during the pop-to-apex scoop window, motivating the transient aspect-ratio velocity metric for Phase 3.5.9C.
+
 
 
